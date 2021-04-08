@@ -1,0 +1,12 @@
+{
+  "name": "nosql-database-clone",
+  "version": "1.0.0",
+  "description": "A NoSQL database clone, precisely Firebase and MongoDB features (only a few) Using classes",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Elijah Trillionz",
+  "license": "MIT"
+}
