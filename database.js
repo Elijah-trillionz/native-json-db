@@ -60,13 +60,16 @@ class Document {
       setTimeout(async () => {
         try {
           // step 1, find the data in d database
-          const oldData = await this.findById(docId);
+          let oldData = await this.findById(docId);
           // step 2, update with new data
 
           // using firebase standards, updating a doc is with an object
           if (typeof newData === 'object' && !Array.isArray(newData)) {
             // get all the ppts in the old data
-            return resolve(changeDataInObjects(newData, oldData));
+            this.documentData[this.documentData.indexOf(oldData)] = {
+              ...newData,
+            };
+            return resolve(newData);
           }
 
           return reject('New data must be an object');
@@ -107,19 +110,6 @@ class Document {
       }, 1000);
     });
   }
-}
-
-function changeDataInObjects(newData, oldData) {
-  for (let i in oldData) {
-    for (let j in newData) {
-      if (i === j) {
-        oldData[i] = newData[j];
-      } else {
-        oldData[j] = newData[j];
-      }
-    }
-  }
-  return oldData;
 }
 
 module.exports = Document;

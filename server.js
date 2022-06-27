@@ -13,8 +13,8 @@ async function addNewUser() {
 
     // getAllUsers();
     // findAUser();
-    // updateAUser();
-    deleteAUser();
+    updateAUser();
+    // deleteAUser();
   } catch (err) {
     console.log(err);
   }
@@ -36,11 +36,12 @@ async function findAUser() {
 
 async function updateAUser() {
   try {
-    const response = await proUsers.update(2, {
+    const response = await proUsers.update(1, {
       name: 'John Doe',
       username: 'johndoe',
     });
-    console.log(response);
+    // console.log(response);
+    await getAllUsers();
   } catch (err) {
     console.log(err);
   }
