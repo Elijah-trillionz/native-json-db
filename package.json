@@ -1,7 +1,7 @@
 {
-  "name": "nosql-database-clone",
+  "name": "jsondb",
   "version": "1.0.0",
-  "description": "A NoSQL database clone, precisely Firebase and MongoDB features (only a few) Using classes",
+  "description": "A database for JSON data, inspired by MongoDB",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

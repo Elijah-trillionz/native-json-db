@@ -1,114 +1,113 @@
-// this is the tipical example of a nosql database
-const letter = 'abcdefghijklmnopqrstuvwxyz';
-const string = `${letter}1234567890123456789123456789$&#@*£€¥%${letter.toUpperCase()}`;
-const letterArray = string.split('');
-
-function randomise() {
-  const randomValue =
-    letterArray[Math.floor(Math.random() * letterArray.length)];
-  return randomValue;
-}
-
-function generateId() {
-  const suggest = [];
-  for (let i = 0; i < 16; i++) {
-    suggest.push(randomise());
-  }
-  return suggest.join(''); // will generate a very strong id
-}
+const fs = require('fs/promises');
+const fsSync = require('fs');
+const Buffer = require('buffer');
 
 class Document {
   // we don't want it to be too big, so we start at documents not collections.
-  constructor() {
-    this.documentData; // array of data
+  constructor(dataName) {
+    const existingData = getExistingData(dataName);
+    this.data = existingData ? existingData : { [dataName]: [] };
+    this.dataName = dataName;
   }
 
   // get the whole data in d document
   get allData() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.documentData);
-      }, 100);
+    return new Promise(async (resolve) => {
+      resolve(this.data);
     });
   }
 
   // creating data === add data to the document
   create(data) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (typeof data === 'object' && !Array.isArray(data)) {
-          // make sure data is an object; new Object()
-          if (!data.id) {
-            const dbId = generateId();
-            data.id = dbId;
-          }
-
-          this.documentData.push(data);
-          return resolve(this.documentData);
-        }
-
-        return reject('Data must be an object');
-      }, 500);
+    return new Promise(async (resolve, reject) => {
+      this.data[this.dataName].push(data);
+      await this.updateJSONFile();
+      resolve('done');
     });
   }
 
   // updating data === update data in the document
-  update(docId, newData) {
-    // the docId represents the id either given by the back-end programmer or a default generated id for that document like mongodb's generated _id
-
-    return new Promise((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          // step 1, find the data in d database
-          let oldData = await this.findById(docId);
-          // step 2, update with new data
-
-          // using firebase standards, updating a doc is with an object
-          if (typeof newData === 'object' && !Array.isArray(newData)) {
-            // get all the ppts in the old data
-            this.documentData[this.documentData.indexOf(oldData)] = {
-              ...newData,
-            };
-            return resolve(newData);
-          }
-
-          return reject('New data must be an object');
-        } catch (err) {
-          return reject(err);
+  update(id, newData) {
+    return new Promise(async (resolve, reject) => {
+      this.data[this.dataName].forEach(async (item, index) => {
+        if (item.id === id) {
+          let oldData = this.data[this.dataName][index];
+          this.data[this.dataName][index] = { ...oldData, ...newData };
+          await this.updateJSONFile();
+          resolve('done');
         }
-      }, 1200);
+      });
     });
   }
 
+  // update by keys
+
   findById(id) {
     return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const doc = this.documentData.filter((datum) => {
-          return datum.id === id;
-        });
-        if (!doc[0]) {
-          return reject('This data does not exist');
-        }
+      if (id) {
+        resolve(this.data[this.dataName].find((item) => item.id === id));
+      } else {
+        reject('no id');
+      }
+    });
+  }
 
-        return resolve(doc[0]);
-      });
-    }, 1000); // shouldn't take so much time
+  // find object with the key value
+  find({ key, value }) {
+    return new Promise((resolve, reject) => {
+      if (key) {
+        resolve(this.data[this.dataName].find((item) => item[key] === value));
+      } else {
+        reject('no key');
+      }
+    });
+  }
+
+  // find all objects with a key value
+  findAll({ key, value }) {
+    return new Promise((resolve, reject) => {
+      if (key) {
+        resolve(this.data[this.dataName].filter((item) => item[key] === value));
+      } else {
+        reject('no key');
+      }
+    });
   }
 
   // delete
   delete(id) {
     return new Promise((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          const documentToDelete = await this.findById(id);
-          const indexOfDocument = this.documentData.indexOf(documentToDelete);
-          this.documentData.splice(indexOfDocument, 1);
-          resolve(this.documentData);
-        } catch (err) {
-          reject(err);
-        }
-      }, 1000);
+      setTimeout(async () => {}, 500);
     });
+  }
+
+  // private
+  async updateJSONFile() {
+    await fs.writeFile(
+      `data/${this.dataName}.json`,
+      JSON.stringify(this.data),
+      {
+        flag: 'w',
+      }
+    );
+  }
+}
+
+// TODO: how to make a class method private
+
+function getExistingData(dataName) {
+  try {
+    const data = fsSync.readFileSync(`data/${dataName}.json`);
+    return JSON.parse(data);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      const initialData = { [dataName]: [] };
+      fsSync.writeFileSync(
+        `data/${dataName}.json`,
+        JSON.stringify(initialData)
+      );
+      return initialData;
+    }
   }
 }
 

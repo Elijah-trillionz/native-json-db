@@ -5,11 +5,11 @@ const proUsers = new Users();
 // backend programmer
 async function addNewUser() {
   try {
-    await proUsers.create({
-      id: 1,
-      name: 'Elijah',
-      username: 'elijahtrillionz',
-    });
+    // await proUsers.create({
+    //   id: 1,
+    //   name: 'Elijah',
+    //   username: 'elijahtrillionz',
+    // });
 
     // getAllUsers();
     // findAUser();
@@ -27,18 +27,22 @@ async function getAllUsers() {
 
 async function findAUser() {
   try {
-    const response = await proUsers.findById(2);
+    const response = await proUsers.findAll({
+      key: 'username',
+      value: 'elijahtrillionz',
+    });
     console.log(response);
   } catch (err) {
     console.log(err);
   }
 }
+findAUser();
 
 async function updateAUser() {
   try {
-    const response = await proUsers.update(1, {
-      name: 'John Doe',
-      username: 'johndoe',
+    const response = await proUsers.update(2, {
+      username: 'johnny',
+      name: 'Starboy',
     });
     // console.log(response);
     await getAllUsers();
@@ -56,4 +60,4 @@ async function deleteAUser() {
   }
 }
 
-addNewUser();
+// addNewUser();
