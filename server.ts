@@ -1,4 +1,4 @@
-const Users = require('./Users');
+import Users from './Users';
 
 const proUsers = new Users();
 
@@ -13,7 +13,7 @@ async function addNewUser() {
 
     // getAllUsers();
     // findAUser();
-    updateAUser();
+    // updateAUser();
     // deleteAUser();
   } catch (err) {
     console.log(err);
@@ -26,11 +26,15 @@ async function getAllUsers() {
 }
 
 async function findAUser() {
+  const name = 'James Spader 1';
+  const username = undefined;
   try {
-    const response = await proUsers.findAll({
-      key: 'username',
-      value: 'elijahtrillionz',
-    });
+    const response = await proUsers.updateMany(
+      {
+        username: 'elijahtrillionz',
+      },
+      ['{ age: 21 }']
+    );
     console.log(response);
   } catch (err) {
     console.log(err);
@@ -40,10 +44,13 @@ findAUser();
 
 async function updateAUser() {
   try {
-    const response = await proUsers.update(2, {
-      username: 'johnny',
-      name: 'Starboy',
-    });
+    const response = await proUsers.findOneAndUpdate(
+      { name: 'same' },
+      {
+        username: 'johnny',
+        name: 'Starboy',
+      }
+    );
     // console.log(response);
     await getAllUsers();
   } catch (err) {
@@ -53,7 +60,7 @@ async function updateAUser() {
 
 async function deleteAUser() {
   try {
-    const response = await proUsers.delete(1);
+    const response = await proUsers.delete({ id: 1 });
     console.log(response);
   } catch (err) {
     console.log(err);

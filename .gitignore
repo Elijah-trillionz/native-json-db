@@ -1,0 +1,6 @@
+/node_modules
+/.idea
+/data
+LICENSE.txt
+README.md
+pre.nodemon.json

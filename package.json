@@ -2,11 +2,17 @@
   "name": "jsondb",
   "version": "1.0.0",
   "description": "A database for JSON data, inspired by MongoDB",
-  "main": "server.js",
+  "main": "server.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "server": "node ./src/server.js",
+    "dev": "tsc --watch"
   },
+  "type": "module",
   "author": "Elijah Trillionz",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.0.3",
+    "nodemon": "^2.0.19",
+    "ts-node": "^10.8.2"
+  }
 }

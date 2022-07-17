@@ -1,7 +1,1 @@
-{
-  "users": [
-    { "id": 1, "name": "Elijah", "username": "elijahtrillionz" },
-    { "id": 2, "name": "Starboy", "username": "johnny" },
-    { "id": 3, "name": "Elijah", "username": "elijahtrillionz" }
-  ]
-}
+{"users":[{"0":"{ age: 21 }","id":1,"name":"James Spader 1","username":"elijahtrillionz","age":21},{"0":"{ age: 21 }","id":2,"name":"James Spader 1","username":"elijahtrillionz","age":21},{"0":"{ age: 21 }","id":3,"name":"James Spader 1","username":"elijahtrillionz","age":21}]}
