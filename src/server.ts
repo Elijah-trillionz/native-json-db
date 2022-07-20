@@ -1,6 +1,6 @@
-import Users from './Users';
+import JSONDB from './database';
 
-const proUsers = new Users();
+const users = new JSONDB('users');
 
 // backend programmer
 async function addNewUser() {
@@ -10,7 +10,6 @@ async function addNewUser() {
     //   name: 'Elijah',
     //   username: 'elijahtrillionz',
     // });
-
     // getAllUsers();
     // findAUser();
     // updateAUser();
@@ -21,7 +20,7 @@ async function addNewUser() {
 }
 
 async function getAllUsers() {
-  const response = await proUsers.allData;
+  const response = await users.allData;
   console.log(response);
 }
 
@@ -29,7 +28,7 @@ async function findAUser() {
   const name = 'James Spader 1';
   const username = undefined;
   try {
-    const response = await proUsers.updateMany(
+    const response = await users.updateMany(
       {
         username: 'elijahtrillionz',
       },
@@ -44,7 +43,7 @@ findAUser();
 
 async function updateAUser() {
   try {
-    const response = await proUsers.findOneAndUpdate(
+    const response = await users.findOneAndUpdate(
       { name: 'same' },
       {
         username: 'johnny',
@@ -60,7 +59,7 @@ async function updateAUser() {
 
 async function deleteAUser() {
   try {
-    const response = await proUsers.delete({ id: 1 });
+    const response = await users.delete({ id: 1 });
     console.log(response);
   } catch (err) {
     console.log(err);

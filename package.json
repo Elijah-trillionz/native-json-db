@@ -4,15 +4,15 @@
   "description": "A database for JSON data, inspired by MongoDB",
   "main": "server.ts",
   "scripts": {
-    "server": "node ./src/server.js",
-    "dev": "tsc --watch"
+    "dev": "nodemon ./src/server.ts"
   },
-  "type": "module",
+  "target": "module",
   "author": "Elijah Trillionz",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.0.3",
+    "concurrently": "^7.3.0",
     "nodemon": "^2.0.19",
-    "ts-node": "^10.8.2"
+    "ts-node": "^10.9.1"
   }
 }

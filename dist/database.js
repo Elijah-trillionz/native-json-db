@@ -19,6 +19,7 @@ class JSONDB {
             this.data[this.dataName].push(data);
             await this.updateJSONFile();
             resolve('done');
+            ``;
         });
     }
     // find object with the key value

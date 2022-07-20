@@ -24,7 +24,7 @@ class JSONDB {
   // get the whole data in d document
   get allData() {
     return new Promise(async (resolve) => {
-      resolve(this.data);
+      resolve(this.data)
     });
   }
 
@@ -34,6 +34,7 @@ class JSONDB {
       this.data[this.dataName].push(data);
       await this.updateJSONFile();
       resolve('done');
+      ``;
     });
   }
 
