@@ -14,11 +14,13 @@ interface Object {
 class JSONDB {
   readonly data: Data;
   readonly dataName: string;
+  schema: {}
 
   constructor(dataName: string) {
     const existingData = getExistingData(dataName);
     this.data = existingData ? existingData : { [dataName]: [] };
     this.dataName = dataName;
+    this.schema = {};
   }
 
   // get the whole data in d document
@@ -26,6 +28,11 @@ class JSONDB {
     return new Promise(async (resolve) => {
       resolve(this.data)
     });
+  }
+
+  // creating a schema for the data, could you work on the schema
+  createSchema(schema: Object) {
+    this.schema = schema;
   }
 
   // creating data === add data to the document
