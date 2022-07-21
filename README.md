@@ -18,3 +18,6 @@
 - the __examples__ directory would contain any typical example of using the database
 
 A sample of a simple query
+
+## NOTE: URGENT
+When compiling to javascript change the module (in `tsconfig.json`) to `ES2020`.
