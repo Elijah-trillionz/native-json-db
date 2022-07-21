@@ -1,14 +1,15 @@
-import JSONDB from './database';
-const users = new JSONDB('users');
+import JSONDB from "./database";
+const users = new JSONDB("users");
 // backend programmer
 async function addNewUser() {
     try {
-        // await proUsers.create({
-        //   id: 1,
-        //   name: 'Elijah',
-        //   username: 'elijahtrillionz',
-        // });
-        // getAllUsers();
+        await users.create({
+            name: "Starboy",
+            username: "starsboys",
+            id: 1,
+            likes: [1, 2, 3, 4],
+        });
+        getAllUsers();
         // findAUser();
         // updateAUser();
         // deleteAUser();
@@ -17,17 +18,16 @@ async function addNewUser() {
         console.log(err);
     }
 }
+// addNewUser();
 async function getAllUsers() {
     const response = await users.allData;
     console.log(response);
 }
 async function findAUser() {
-    const name = 'James Spader 1';
+    const name = "James Spader 1";
     const username = undefined;
     try {
-        const response = await users.updateMany({
-            username: 'elijahtrillionz',
-        }, ['{ age: 21 }']);
+        const response = await users.findMany({ name: "Elijah" });
         console.log(response);
     }
     catch (err) {
@@ -35,26 +35,3 @@ async function findAUser() {
     }
 }
 findAUser();
-async function updateAUser() {
-    try {
-        const response = await users.findOneAndUpdate({ name: 'same' }, {
-            username: 'johnny',
-            name: 'Starboy',
-        });
-        // console.log(response);
-        await getAllUsers();
-    }
-    catch (err) {
-        console.log(err);
-    }
-}
-async function deleteAUser() {
-    try {
-        const response = await users.delete({ id: 1 });
-        console.log(response);
-    }
-    catch (err) {
-        console.log(err);
-    }
-}
-// addNewUser();
