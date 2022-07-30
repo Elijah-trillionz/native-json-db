@@ -1,20 +1,23 @@
-# nosql-database-clone
+# native-json-db
 
-A NoSQL database clone, precisely Firebase and MongoDB features (only a few) Using classes
+## Queries:
+1. .create(data) => creates a user, it takes only an object of data. This data must align with the schema for this class instance.
+2. .schema(data) => creates a schema for the current instance. It takes only an object of data with the valid JavaScript data types as values
+3. .updateOne(filter, newData) => updates an existing object. The filter is an object that both the key and value is used to find the first occurrence of that key and value. Should return null if no occurrence was found.
+4. .updateMany(filter, newData) => updates an existing object. The filter is an object that both the key and value is used to find all occurrences of that key and value. Should return null if no occurrence was found.
+5. .findOne(filter) => finds an object of data. Returns the first found occurrence. The filter in others apply here too. Return null if not found
+6. .findMany(filter) => finds a set of similar objects. Returns all occurrences. Return null if not found
+7. deleteOne(filter) => deletes the first found occurrence.
+8. deleteMany(filter) => deletes all found occurrences.
 
-The idea is to store these data in json formats in a data dir in the project.
-Each document of data (model) will have it's own json file, connection to it will be through classes.
+## Contributing
 
-# Questions
+- Clone current project, which includes a `tsconfig.json` that specifically compiles Typescript to JavaScript in the __dist__ directory.
+- Write code only in typescript, specifically in the __src__ directory, code should not be written/edited in the __dist__ directory.
+- The __src__ directory only contains typescript files of the package i.e files that matter
+- the __examples__ directory would contain any typical example of using the database
 
-1. What's the cost
-2. Why would devs wanna use it
+A sample of a simple query
 
-# Facts
-
-1. Coexist with react ssr
-
-# next idea
-
-gibberish.js
-create a boilerplate for fastify for front-end developers. A way of setting up simple CRUD APIs for front-end developers without knowing anything about back-end development
+## NOTE: URGENT
+When compiling to javascript change the module (in `tsconfig.json`) to `ES2020`.
