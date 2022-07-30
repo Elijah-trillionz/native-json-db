@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
 import { instanceOfNodeError } from "./error";
+import Ajv from "ajv";
 
 interface Data {
   [key: string]: any[];
@@ -21,13 +22,15 @@ interface ErrorObj {
 class JSONDB {
   readonly data: Data;
   readonly dataName: string;
-  schema: {};
+  validate: any;
+  connected: boolean;
 
   constructor(dataName: string) {
     const existingData = getExistingData(dataName);
     this.data = existingData ? existingData : { [dataName]: [] };
     this.dataName = dataName;
-    this.schema = {};
+    this.validate = null;
+    this.connected = false;
   }
 
   // get the whole data in d document
@@ -37,14 +40,40 @@ class JSONDB {
     });
   }
 
-  // creating a schema for the data, could you work on the schema
-  createSchema(schema: Object) {
-    this.schema = schema;
+  // connect to the db: basically ensuring schema is valid else throw an error
+  // ensure that the schema is ready and active before the db is ready to be used
+  connect(schema: Object) {
+    return new Promise((resolve, reject) => {
+      const ajv = new Ajv();
+      if (this.connected) {
+        return reject({
+          message:
+            "Can only connect and create a schema once per every instance",
+          error: "CONNECTION_ERROR",
+          errorCode: 613,
+        });
+      }
+
+      this.connected = true;
+      this.validate = ajv.compile(schema);
+    });
   }
 
   // creating data === add data to the document
   create(data: Object) {
     return new Promise((resolve, reject) => {
+      // validate the data with the given schema
+      const valid = this.validate(data);
+      if (!valid) {
+        const { keyword, params, message } = this.validate.errors[0];
+        return reject({
+          message,
+          error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
+          params,
+          errorCode: 615,
+        });
+      }
+
       this.validateData(data, async (err: ErrorObj) => {
         if (err) return reject(err);
 
@@ -93,19 +122,35 @@ class JSONDB {
     });
   }
 
+  // find an object and update
+  // both filter and newData has to be an object
+  findOneAndUpdate(filter: Object, newData: Object) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const oldData = await this.findOne(filter);
+        // oldData will be an empty object if not found, as such update all data
+        this.validateData(oldData, (err: ErrorObj) => {
+          if (err) return reject(err);
+        });
+      } catch (e) {
+        // for errors thrown when the findOne method encounters an error
+        reject(e);
+      }
+    });
+  }
+
   // helper functions
+
   // find an object from data
   // will return the first data if no key/value is provided
   private filter = (keys: string[], values: unknown[], cb: Function) => {
     const found = this.data[this.dataName].filter((item) => {
       let isFound = true;
       keys.forEach((key, index) => {
-        // console.log(item[key], values[index]);
         if (item[key] !== values[index]) {
           isFound = false;
         }
       });
-      console.log(isFound);
       return isFound;
     });
 
@@ -135,6 +180,18 @@ class JSONDB {
   }
 
   private async update(oldData: Object, newData: Object) {
+    // validate the data with the given schema
+    const valid = this.validate(newData);
+    if (!valid) {
+      const { keyword, params, message } = this.validate.errors[0];
+      return {
+        message,
+        error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
+        params,
+        errorCode: 615,
+      };
+    }
+
     const keys = Object.keys(newData);
     const values = Object.values(newData);
     keys.forEach((key, index) => {
@@ -145,17 +202,27 @@ class JSONDB {
     return "done";
   }
 
-  // use this function in each method to validate data is an object only in javascript
+  // use this function in each method to validate that data is an object only (useful for javascript)
   validateData = (data: Object, cb: Function) => {
-    if (typeof data === "object" && !Array.isArray(data)) {
-      return cb(null);
+    // verify that the server is connected before doing anything
+    if (!this.connected) {
+      return cb({
+        message: "Your server is not connected. Use the connect() method",
+        error: "NO_CONNECTION",
+        errorCode: 614,
+      });
     }
 
-    return cb({
-      message: "Data must be an object",
-      error: "INVALID_TYPE",
-      errorCode: 611,
-    });
+    // TODO: remove for typescript
+    if (typeof data !== "object" && Array.isArray(data)) {
+      return cb({
+        message: "Data must be an object",
+        error: "INVALID_TYPE",
+        errorCode: 611,
+      });
+    }
+
+    return cb(null);
   };
 }
 
@@ -182,9 +249,13 @@ export default JSONDB;
 // ERROR CODES: not all are errors, you could say REJECT CODES, where the reject function is used::
 // 611: invalid data type - a core error when submitting a data that isn't an object
 // 612: not found - when the filter method finds no occurrences
+// 613: connection error: because schema cannot be compiled more than once, the server must be connected only once in every instance
+// 614: no connection: happens when you don't connect before using nay method
+// 615: all schema errors from ajv
 
 // TODOS:
 // validate file is written successfully, else return error
 // hide the private methods in JavaScript
 // incrementing/decrementing numbers in an object like { name: 'John', age: 21 }
 // pushing and popping to an array in an object like { name: 'John', friends: ['James', 'Ken'] }
+// handle thrown errors where promises where used e.g the create method

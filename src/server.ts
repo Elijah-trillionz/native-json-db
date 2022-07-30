@@ -1,6 +1,28 @@
 import JSONDB from "./database";
+import anyOf from "ajv/lib/vocabularies/applicator/anyOf";
 
 const users = new JSONDB("users");
+
+(async () => {
+  await users.connect({
+    type: "object",
+    required: ["name", "username", "likes", "age"],
+    properties: {
+      name: { type: "string" },
+      username: { type: "string" },
+      likes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { anyOf: [{ type: "number" }, { type: "string" }] },
+          },
+        },
+      },
+      age: { type: "integer" },
+    },
+  });
+})();
 
 // backend programmer
 async function addNewUser() {
@@ -9,9 +31,9 @@ async function addNewUser() {
       name: "Starboy",
       username: "starsboys",
       id: 1,
-      likes: [1, 2, 3, 4],
+      likes: [{ id: 21 }, { id: "same" }],
     });
-    getAllUsers();
+    // getAllUsers();
     // findAUser();
     // updateAUser();
     // deleteAUser();
@@ -19,7 +41,7 @@ async function addNewUser() {
     console.log(err);
   }
 }
-// addNewUser();
+addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -36,4 +58,4 @@ async function findAUser() {
     console.log(err);
   }
 }
-findAUser();
+// findAUser();
