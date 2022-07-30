@@ -41,7 +41,7 @@ async function addNewUser() {
     console.log(err);
   }
 }
-addNewUser();
+// addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -49,8 +49,6 @@ async function getAllUsers() {
 }
 
 async function findAUser() {
-  const name = "James Spader 1";
-  const username = undefined;
   try {
     const response = await users.findMany({ name: "Elijah" });
     console.log(response);
@@ -59,3 +57,13 @@ async function findAUser() {
   }
 }
 // findAUser();
+
+async function updateUser() {
+  try {
+    const res = await users.findOneAndUpdate({}, { name: "Elijah" });
+    console.log(res);
+  } catch (err) {
+    console.log(err, "error");
+  }
+}
+updateUser();

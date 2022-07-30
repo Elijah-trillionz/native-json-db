@@ -17,6 +17,7 @@ interface ErrorObj {
   message: string;
   errorCode: number;
   error: string;
+  params?: Object; // for ajv error
 }
 
 class JSONDB {
@@ -85,7 +86,7 @@ class JSONDB {
   }
 
   // find object with the key value
-  findOne(filter: any): Promise<Object> {
+  findOne(filter: Object): Promise<Object | null> {
     return new Promise((resolve, reject) => {
       this.validateData(filter, (err: ErrorObj) => {
         if (err) return reject(err);
@@ -94,8 +95,8 @@ class JSONDB {
         const values = Object.values(filter);
 
         this.filter(keys, values, (err: ErrorObj, foundData: Object[]) => {
-          // resolve with an empty object if not found, useful for updating
-          if (err && err.error === "NOT_FOUND") return resolve({});
+          // resolve with null if not found, allowing the dev control it from the try block
+          if (err && err.error === "NOT_FOUND") return resolve(null);
 
           resolve(foundData[0]);
         });
@@ -104,7 +105,7 @@ class JSONDB {
   }
 
   // find all objects with a key value
-  findMany(filter: any): Promise<Object[]> {
+  findMany(filter: Object): Promise<Object[]> {
     return new Promise((resolve, reject) => {
       this.validateData(filter, (err: ErrorObj) => {
         if (err) return reject(err);
@@ -113,7 +114,7 @@ class JSONDB {
         const values = Object.values(filter);
 
         this.filter(keys, values, (err: ErrorObj, foundData: Object[]) => {
-          // resolve with an empty array if not found, useful for updating
+          // resolve with [] if not found, allowing the dev control it from the try block
           if (err && err.error === "NOT_FOUND") return resolve([]);
 
           resolve(foundData);
@@ -128,9 +129,23 @@ class JSONDB {
     return new Promise(async (resolve, reject) => {
       try {
         const oldData = await this.findOne(filter);
-        // oldData will be an empty object if not found, as such update all data
-        this.validateData(oldData, (err: ErrorObj) => {
+
+        if (!oldData) {
+          return reject({
+            message: "No data was found to be updated",
+            errorCode: 612,
+            error: "NOT_FOUND",
+          });
+        }
+
+        this.validateData(oldData, async (err: ErrorObj) => {
           if (err) return reject(err);
+
+          await this.update(
+            oldData,
+            newData,
+            (err: ErrorObj, updated: boolean) => {}
+          );
         });
       } catch (e) {
         // for errors thrown when the findOne method encounters an error
@@ -179,17 +194,20 @@ class JSONDB {
     );
   }
 
-  private async update(oldData: Object, newData: Object) {
+  private async update(oldData: Object, newData: Object, cb: Function) {
     // validate the data with the given schema
     const valid = this.validate(newData);
     if (!valid) {
       const { keyword, params, message } = this.validate.errors[0];
-      return {
-        message,
-        error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
-        params,
-        errorCode: 615,
-      };
+      return cb(
+        {
+          message,
+          error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
+          params,
+          errorCode: 615,
+        },
+        false
+      );
     }
 
     const keys = Object.keys(newData);
@@ -199,7 +217,7 @@ class JSONDB {
       oldData[key] = values[index] ? values[index] : oldData[key];
     });
     await this.updateJSONFile();
-    return "done";
+    return cb(null, true);
   }
 
   // use this function in each method to validate that data is an object only (useful for javascript)
@@ -214,7 +232,10 @@ class JSONDB {
     }
 
     // TODO: remove for typescript
-    if (typeof data !== "object" && Array.isArray(data)) {
+    if (
+      typeof data !== "object" ||
+      (typeof data === "object" && Array.isArray(data))
+    ) {
       return cb({
         message: "Data must be an object",
         error: "INVALID_TYPE",
