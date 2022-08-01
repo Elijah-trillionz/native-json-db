@@ -60,7 +60,10 @@ async function findAUser() {
 
 async function updateUser() {
   try {
-    const res = await users.findOneAndUpdate({}, { name: "Elijah" });
+    const res = await users.findOneAndUpdate(
+      { name: "Elijah" },
+      { name: "Elijah-2", likes: [{ id: 21 }, { id: "same" }], age: 22 }
+    );
     console.log(res);
   } catch (err) {
     console.log(err, "error");

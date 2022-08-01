@@ -23,6 +23,7 @@ interface ErrorObj {
 class JSONDB {
   readonly data: Data;
   readonly dataName: string;
+  readonly dataArr: Object[];
   validate: any;
   connected: boolean;
 
@@ -30,6 +31,7 @@ class JSONDB {
     const existingData = getExistingData(dataName);
     this.data = existingData ? existingData : { [dataName]: [] };
     this.dataName = dataName;
+    this.dataArr = this.data[this.dataName];
     this.validate = null;
     this.connected = false;
   }
@@ -78,7 +80,7 @@ class JSONDB {
       this.validateData(data, async (err: ErrorObj) => {
         if (err) return reject(err);
 
-        this.data[this.dataName].push(data);
+        this.dataArr.push(data);
         await this.updateJSONFile();
         resolve("done");
       });
@@ -91,12 +93,13 @@ class JSONDB {
       this.validateData(filter, (err: ErrorObj) => {
         if (err) return reject(err);
 
-        const keys = Object.keys(filter);
-        const values = Object.values(filter);
-
-        this.filter(keys, values, (err: ErrorObj, foundData: Object[]) => {
+        this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
           // resolve with null if not found, allowing the dev control it from the try block
-          if (err && err.error === "NOT_FOUND") return resolve(null);
+          if (err && err.error === "NOT_FOUND") {
+            return resolve(null);
+          } else if (err && err.error === "BAD_REQUEST") {
+            return reject(err);
+          }
 
           resolve(foundData[0]);
         });
@@ -110,12 +113,13 @@ class JSONDB {
       this.validateData(filter, (err: ErrorObj) => {
         if (err) return reject(err);
 
-        const keys = Object.keys(filter);
-        const values = Object.values(filter);
-
-        this.filter(keys, values, (err: ErrorObj, foundData: Object[]) => {
+        this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
           // resolve with [] if not found, allowing the dev control it from the try block
-          if (err && err.error === "NOT_FOUND") return resolve([]);
+          if (err && err.error === "NOT_FOUND") {
+            return resolve([]);
+          } else if (err && err.error === "BAD_REQUEST") {
+            return reject(err);
+          }
 
           resolve(foundData);
         });
@@ -141,11 +145,11 @@ class JSONDB {
         this.validateData(oldData, async (err: ErrorObj) => {
           if (err) return reject(err);
 
-          await this.update(
-            oldData,
-            newData,
-            (err: ErrorObj, updated: boolean) => {}
-          );
+          await this.update(oldData, newData, (err: ErrorObj) => {
+            if (err) return reject(err);
+
+            resolve("Done");
+          });
         });
       } catch (e) {
         // for errors thrown when the findOne method encounters an error
@@ -158,8 +162,23 @@ class JSONDB {
 
   // find an object from data
   // will return the first data if no key/value is provided
-  private filter = (keys: string[], values: unknown[], cb: Function) => {
-    const found = this.data[this.dataName].filter((item) => {
+  private filter = (filter: Object, cb: Function) => {
+    const keys = Object.keys(filter);
+    const values = Object.values(filter);
+
+    // return as invalid
+    if (keys.length < 1 || values.length < 1) {
+      return cb(
+        {
+          message: "Filter object does not contain any key/values",
+          error: "BAD_REQUEST",
+          errorCode: 616,
+        },
+        null
+      );
+    }
+
+    const found = this.dataArr.filter((item) => {
       let isFound = true;
       keys.forEach((key, index) => {
         if (item[key] !== values[index]) {
@@ -179,7 +198,7 @@ class JSONDB {
         error: "NOT_FOUND",
         errorCode: 612,
       },
-      found
+      null
     );
   };
 
@@ -195,8 +214,10 @@ class JSONDB {
   }
 
   private async update(oldData: Object, newData: Object, cb: Function) {
-    // validate the data with the given schema
-    const valid = this.validate(newData);
+    // create a new object that contains both the old data and new data
+    // then validate this new object against the schema
+    const updatedData = { ...oldData, ...newData };
+    const valid = this.validate(updatedData); // just to make sure the updated data follows the schema
     if (!valid) {
       const { keyword, params, message } = this.validate.errors[0];
       return cb(
@@ -210,12 +231,8 @@ class JSONDB {
       );
     }
 
-    const keys = Object.keys(newData);
-    const values = Object.values(newData);
-    keys.forEach((key, index) => {
-      // reason for condition: leave old data if current data of a property is undefined
-      oldData[key] = values[index] ? values[index] : oldData[key];
-    });
+    this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
+
     await this.updateJSONFile();
     return cb(null, true);
   }
@@ -273,6 +290,7 @@ export default JSONDB;
 // 613: connection error: because schema cannot be compiled more than once, the server must be connected only once in every instance
 // 614: no connection: happens when you don't connect before using nay method
 // 615: all schema errors from ajv
+// 616: bad_request: happens when you send an empty object
 
 // TODOS:
 // validate file is written successfully, else return error
