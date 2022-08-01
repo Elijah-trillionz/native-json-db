@@ -28,10 +28,11 @@ const users = new JSONDB("users");
 async function addNewUser() {
   try {
     await users.create({
-      name: "Starboy",
-      username: "starsboys",
+      name: "John Doe",
+      username: "john_doe",
       id: 1,
       likes: [{ id: 21 }, { id: "same" }],
+      age: 45,
     });
     // getAllUsers();
     // findAUser();
@@ -41,7 +42,7 @@ async function addNewUser() {
     console.log(err);
   }
 }
-// addNewUser();
+addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -60,13 +61,10 @@ async function findAUser() {
 
 async function updateUser() {
   try {
-    const res = await users.findOneAndUpdate(
-      { name: "Elijah" },
-      { name: "Elijah-2", likes: [{ id: 21 }, { id: "same" }], age: 22 }
-    );
+    const res = await users.findOneAndUpdate({ name: "Elijah-2" }, { age: 30 });
     console.log(res);
   } catch (err) {
     console.log(err, "error");
   }
 }
-updateUser();
+// updateUser();

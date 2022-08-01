@@ -66,23 +66,16 @@ class JSONDB {
   create(data: Object) {
     return new Promise((resolve, reject) => {
       // validate the data with the given schema
-      const valid = this.validate(data);
-      if (!valid) {
-        const { keyword, params, message } = this.validate.errors[0];
-        return reject({
-          message,
-          error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
-          params,
-          errorCode: 615,
-        });
-      }
-
-      this.validateData(data, async (err: ErrorObj) => {
+      this.validateSchema(data, (err: ErrorObj) => {
         if (err) return reject(err);
 
-        this.dataArr.push(data);
-        await this.updateJSONFile();
-        resolve("done");
+        this.validateData(data, async (err: ErrorObj) => {
+          if (err) return reject(err);
+
+          this.dataArr.push(data);
+          await this.updateJSONFile();
+          resolve("done");
+        });
       });
     });
   }
@@ -217,25 +210,32 @@ class JSONDB {
     // create a new object that contains both the old data and new data
     // then validate this new object against the schema
     const updatedData = { ...oldData, ...newData };
-    const valid = this.validate(updatedData); // just to make sure the updated data follows the schema
+    // just to make sure the updated data follows the schema
+    this.validateSchema(updatedData, async (err: ErrorObj) => {
+      if (err) return cb(err);
+
+      this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
+
+      await this.updateJSONFile();
+      return cb(null, true);
+    });
+  }
+
+  // validate schema: used in the update and the create method
+  validateSchema = (data: Object, cb: Function) => {
+    const valid = this.validate(data);
     if (!valid) {
       const { keyword, params, message } = this.validate.errors[0];
-      return cb(
-        {
-          message,
-          error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
-          params,
-          errorCode: 615,
-        },
-        false
-      );
+      return cb({
+        message,
+        error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
+        params,
+        errorCode: 615,
+      });
     }
 
-    this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
-
-    await this.updateJSONFile();
-    return cb(null, true);
-  }
+    return cb(null);
+  };
 
   // use this function in each method to validate that data is an object only (useful for javascript)
   validateData = (data: Object, cb: Function) => {
