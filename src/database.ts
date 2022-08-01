@@ -135,7 +135,7 @@ class JSONDB {
           });
         }
 
-        this.validateData(oldData, async (err: ErrorObj) => {
+        this.validateData(newData, async (err: ErrorObj) => {
           if (err) return reject(err);
 
           await this.update(oldData, newData, (err: ErrorObj) => {
@@ -146,6 +146,39 @@ class JSONDB {
         });
       } catch (e) {
         // for errors thrown when the findOne method encounters an error
+        reject(e);
+      }
+    });
+  }
+
+  updateMany(filter: Object, newData: Object) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const oldData = await this.findMany(filter);
+
+        if (oldData.length < 1) {
+          return reject({
+            message: "No data was found to be updated",
+            errorCode: 612,
+            error: "NOT_FOUND",
+          });
+        }
+
+        this.validateData(newData, async (err: ErrorObj) => {
+          if (err) return reject(err);
+
+          oldData.forEach((value) => {
+            (async () => {
+              await this.update(value, newData, (err: ErrorObj) => {
+                if (err) return reject(err);
+
+                resolve("Done");
+              });
+            })();
+          });
+        });
+      } catch (e) {
+        // for errors thrown when the findMany method encounters an error
         reject(e);
       }
     });
@@ -222,7 +255,7 @@ class JSONDB {
   }
 
   // validate schema: used in the update and the create method
-  validateSchema = (data: Object, cb: Function) => {
+  private validateSchema = (data: Object, cb: Function) => {
     const valid = this.validate(data);
     if (!valid) {
       const { keyword, params, message } = this.validate.errors[0];

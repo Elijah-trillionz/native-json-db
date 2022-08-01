@@ -42,7 +42,7 @@ async function addNewUser() {
     console.log(err);
   }
 }
-addNewUser();
+// addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -68,3 +68,19 @@ async function updateUser() {
   }
 }
 // updateUser();
+
+async function updateMany() {
+  try {
+    const res = await users.updateMany(
+      { username: "starsboys" },
+      {
+        likes: [{ id: 1 }],
+        age: 10,
+      }
+    );
+    console.log(res);
+  } catch (e) {
+    console.log(e);
+  }
+}
+updateMany();
