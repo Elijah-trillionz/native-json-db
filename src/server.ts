@@ -71,11 +71,12 @@ async function updateUser() {
 
 async function updateMany() {
   try {
-    const res = await users.updateMany(
+    const res = await users.findOneAndUpdate(
       { username: "starsboys" },
       {
         likes: [{ id: 1 }],
         age: 10,
+        $inc: { age: 1, likesGiven: 15 },
       }
     );
     console.log(res);

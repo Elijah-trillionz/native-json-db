@@ -8,8 +8,14 @@ interface Data {
 }
 
 // merely indicating that the object should not be empty
+interface IncDecObject {
+  [key: string]: number;
+}
+
 interface Object {
   [key: string]: any;
+  $inc?: IncDecObject;
+  $dec?: IncDecObject;
 }
 
 // error object
@@ -26,6 +32,7 @@ class JSONDB {
   readonly dataArr: Object[];
   validate: any;
   connected: boolean;
+  updateKeywords: string[];
 
   constructor(dataName: string) {
     const existingData = getExistingData(dataName);
@@ -34,6 +41,7 @@ class JSONDB {
     this.dataArr = this.data[this.dataName];
     this.validate = null;
     this.connected = false;
+    this.updateKeywords = ["push", "inc", "dec", "pop"];
   }
 
   // get the whole data in d document
@@ -240,18 +248,52 @@ class JSONDB {
   }
 
   private async update(oldData: Object, newData: Object, cb: Function) {
+    // find any update keywords in newData object
+    const values = Object.values(newData);
+    const keys = Object.keys(newData);
+    const specialUpdateKeys = keys.filter((key) => {
+      return this.updateKeywords.includes(`${key.substring(1)}`);
+    });
+
+    if (specialUpdateKeys.length >= 1) {
+      let newObj = { ...newData };
+      specialUpdateKeys.forEach((specialUpdateKey) => {
+        // console.log(specialUpdateKey); /// $inc
+        const keysToUpdate = Object.keys(newData[specialUpdateKey]);
+        // console.log(keysToUpdate); /// [ 'age' ]
+        switch (specialUpdateKey) {
+          case "$inc":
+            // first find the key to increment
+            keysToUpdate.forEach((keyToUpdate) => {
+              // console.log(keyToUpdate) /// age
+              // get the previous value in the oldData
+              const prevValue = oldData[keyToUpdate]; // note there is a possibility that the data doesn't exist, or it isn't a string, handle later;
+              // the dev will provide a value to increment by. this must be number, handle later;
+              const valToIncrementBy = newData[specialUpdateKey][keyToUpdate];
+              const incrementedVal = prevValue + valToIncrementBy;
+              newObj = { ...newObj, [keyToUpdate]: incrementedVal };
+              // now remove the $inc key and value from the newObj
+              delete newObj["$inc"];
+            });
+          // console.log(newObj);
+        }
+        // newData[specialUpdateKey]
+      });
+      console.log(newObj);
+    }
+
     // create a new object that contains both the old data and new data
     // then validate this new object against the schema
-    const updatedData = { ...oldData, ...newData };
-    // just to make sure the updated data follows the schema
-    this.validateSchema(updatedData, async (err: ErrorObj) => {
-      if (err) return cb(err);
-
-      this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
-
-      await this.updateJSONFile();
-      return cb(null, true);
-    });
+    // const updatedData = { ...oldData, ...newData };
+    // // just to make sure the updated data follows the schema
+    // this.validateSchema(updatedData, async (err: ErrorObj) => {
+    //   if (err) return cb(err);
+    //
+    //   this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
+    //
+    //   await this.updateJSONFile();
+    //   return cb(null, true);
+    // });
   }
 
   // validate schema: used in the update and the create method
