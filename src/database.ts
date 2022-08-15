@@ -249,51 +249,54 @@ class JSONDB {
 
   private async update(oldData: Object, newData: Object, cb: Function) {
     // find any update keywords in newData object
-    const values = Object.values(newData);
     const keys = Object.keys(newData);
     const specialUpdateKeys = keys.filter((key) => {
       return this.updateKeywords.includes(`${key.substring(1)}`);
     });
 
+    let newObj = { ...newData };
     if (specialUpdateKeys.length >= 1) {
-      let newObj = { ...newData };
       specialUpdateKeys.forEach((specialUpdateKey) => {
-        // console.log(specialUpdateKey); /// $inc
-        const keysToUpdate = Object.keys(newData[specialUpdateKey]);
-        // console.log(keysToUpdate); /// [ 'age' ]
-        switch (specialUpdateKey) {
-          case "$inc":
-            // first find the key to increment
-            keysToUpdate.forEach((keyToUpdate) => {
-              // console.log(keyToUpdate) /// age
-              // get the previous value in the oldData
-              const prevValue = oldData[keyToUpdate]; // note there is a possibility that the data doesn't exist, or it isn't a string, handle later;
-              // the dev will provide a value to increment by. this must be number, handle later;
-              const valToIncrementBy = newData[specialUpdateKey][keyToUpdate];
-              const incrementedVal = prevValue + valToIncrementBy;
-              newObj = { ...newObj, [keyToUpdate]: incrementedVal };
-              // now remove the $inc key and value from the newObj
-              delete newObj["$inc"];
-            });
-          // console.log(newObj);
+        const objectToUpdate = newData[specialUpdateKey];
+        // verify that the specialUpdateKey has an object as value
+        if (typeof objectToUpdate === "object") {
+          const keysToUpdate = Object.keys(objectToUpdate);
+          switch (specialUpdateKey) {
+            case "$inc":
+              newObj = this.updateNumberValues(
+                keysToUpdate,
+                "$inc",
+                oldData,
+                newObj,
+                objectToUpdate
+              );
+              break;
+            case "$dec":
+              newObj = this.updateNumberValues(
+                keysToUpdate,
+                "$dec",
+                oldData,
+                newObj,
+                objectToUpdate
+              );
+              break;
+          }
         }
-        // newData[specialUpdateKey]
       });
-      console.log(newObj);
     }
 
     // create a new object that contains both the old data and new data
     // then validate this new object against the schema
-    // const updatedData = { ...oldData, ...newData };
-    // // just to make sure the updated data follows the schema
-    // this.validateSchema(updatedData, async (err: ErrorObj) => {
-    //   if (err) return cb(err);
-    //
-    //   this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
-    //
-    //   await this.updateJSONFile();
-    //   return cb(null, true);
-    // });
+    const updatedData = { ...oldData, ...newObj };
+    // just to make sure the updated data follows the schema
+    this.validateSchema(updatedData, async (err: ErrorObj) => {
+      if (err) return cb(err);
+
+      this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
+
+      await this.updateJSONFile();
+      return cb(null, true);
+    });
   }
 
   // validate schema: used in the update and the create method
@@ -312,8 +315,37 @@ class JSONDB {
     return cb(null);
   };
 
+  // deep helper function
+  // increment or decrement a value based on previous values
+  private updateNumberValues = (
+    keysToUpdate: string[],
+    specialUpdateKey: "$inc" | "$dec",
+    oldData: Object,
+    newObj: Object,
+    objectToUpdate: Object
+  ) => {
+    // first find the keys to decrement
+    keysToUpdate.forEach((keyToUpdate) => {
+      // console.log(keyToUpdate) /// age
+      // get the previous value in the oldData
+      const prevValue = oldData[keyToUpdate]; // note there is a possibility that the data doesn't exist, or it isn't a number;
+      if (typeof prevValue === "number") {
+        // the dev will provide a value to update by. this must be number, handle for js;
+        const valToUpdateBy = objectToUpdate[keyToUpdate];
+        const updatedVal =
+          specialUpdateKey === "$inc"
+            ? prevValue + valToUpdateBy
+            : prevValue - valToUpdateBy;
+        newObj = { ...newObj, [keyToUpdate]: updatedVal };
+      }
+    });
+    // now remove the update key and value from the newObj
+    delete newObj[specialUpdateKey];
+    return newObj;
+  };
+
   // use this function in each method to validate that data is an object only (useful for javascript)
-  validateData = (data: Object, cb: Function) => {
+  private validateData = (data: Object, cb: Function) => {
     // verify that the server is connected before doing anything
     if (!this.connected) {
       return cb({

@@ -74,9 +74,8 @@ async function updateMany() {
     const res = await users.findOneAndUpdate(
       { username: "starsboys" },
       {
-        likes: [{ id: 1 }],
-        age: 10,
-        $inc: { age: 1, likesGiven: 15 },
+        likes: [{ id: 100 }],
+        $inc: {},
       }
     );
     console.log(res);
