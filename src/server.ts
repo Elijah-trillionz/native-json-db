@@ -71,11 +71,11 @@ async function updateUser() {
 
 async function updateMany() {
   try {
-    const res = await users.findOneAndUpdate(
-      { username: "starsboys" },
+    const res = await users.updateMany(
+      { username: "starboys1" },
       {
-        likes: [{ id: 100 }],
-        $inc: {},
+        username: "starboys1",
+        $inc: { age: 1 },
       }
     );
     console.log(res);
@@ -83,4 +83,24 @@ async function updateMany() {
     console.log(e);
   }
 }
-updateMany();
+// updateMany();
+
+async function findOneAndDelete() {
+  try {
+    const res = await users.findOneAndDelete({ username: "starsboys21" });
+    console.log(res);
+  } catch (e) {
+    console.log(e);
+  }
+}
+// findOneAndDelete();
+
+async function deleteMany() {
+  try {
+    const res = await users.deleteMany({ name: "Starboy" });
+    console.log(res);
+  } catch (e) {
+    console.log(e);
+  }
+}
+// deleteMany();

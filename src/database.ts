@@ -146,11 +146,15 @@ class JSONDB {
         this.validateData(newData, async (err: ErrorObj) => {
           if (err) return reject(err);
 
-          await this.update(oldData, newData, (err: ErrorObj) => {
-            if (err) return reject(err);
+          await this.update(
+            oldData,
+            newData,
+            (err: ErrorObj, updatedData: Object) => {
+              if (err) return reject(err);
 
-            resolve("Done");
-          });
+              resolve(updatedData);
+            }
+          );
         });
       } catch (e) {
         // for errors thrown when the findOne method encounters an error
@@ -172,25 +176,80 @@ class JSONDB {
           });
         }
 
-        this.validateData(newData, async (err: ErrorObj) => {
+        this.validateData(newData, (err: ErrorObj) => {
           if (err) return reject(err);
 
-          oldData.forEach((value) => {
-            (async () => {
-              await this.update(value, newData, (err: ErrorObj) => {
+          const updatedDataArr: Object[] = oldData.map(async (value) => {
+            return await this.update(
+              value,
+              newData,
+              (err: ErrorObj, updatedData: Object) => {
                 if (err) return reject(err);
 
-                resolve("Done");
-              });
-            })();
+                return updatedData;
+              }
+            );
           });
+
+          resolve(Promise.all(updatedDataArr));
         });
+      } catch (e) {
+        // for errors thrown when the findMany or update method encounters an error
+        reject(e);
+      }
+    });
+  }
+
+  // TODO: have an updateAll method, that updates all documents
+
+  // find an object and delete
+  findOneAndDelete(filter: Object) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const data = await this.findOne(filter);
+
+        if (!data) {
+          // resolve with an empty obj indicating no document was deleted
+          return resolve({});
+        }
+
+        this.dataArr.splice(this.dataArr.indexOf(data), 1);
+
+        await this.updateJSONFile();
+
+        // return the data deleted
+        resolve(data);
+      } catch (e) {
+        // for errors thrown when the findOne method encounters an error
+        reject(e);
+      }
+    });
+  }
+
+  // find similar objects and delete
+  deleteMany(filter: Object) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const dataArr = await this.findMany(filter);
+
+        if (dataArr.length <= 0) {
+          // resolve with an empty array indicating no document was deleted
+          return resolve([]);
+        }
+
+        dataArr.forEach((data) => {
+          this.dataArr.splice(this.dataArr.indexOf(data), 1);
+        });
+
+        await this.updateJSONFile();
+        resolve(dataArr);
       } catch (e) {
         // for errors thrown when the findMany method encounters an error
         reject(e);
       }
     });
   }
+  // TODO: have a deleteAll method, that deletes all documents
 
   // helper functions
 
@@ -289,13 +348,13 @@ class JSONDB {
     // then validate this new object against the schema
     const updatedData = { ...oldData, ...newObj };
     // just to make sure the updated data follows the schema
-    this.validateSchema(updatedData, async (err: ErrorObj) => {
+    return this.validateSchema(updatedData, async (err: ErrorObj) => {
       if (err) return cb(err);
 
       this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
 
       await this.updateJSONFile();
-      return cb(null, true);
+      return cb(null, updatedData);
     });
   }
 
@@ -376,7 +435,7 @@ function getExistingData(dataName: string) {
     const data = fsSync.readFileSync(`data/${dataName}.json`);
     return JSON.parse(data.toString());
   } catch (e) {
-    if (instanceOfNodeError(e, TypeError)) {
+    if (instanceOfNodeError(e, Error)) {
       if (e.code === "ENOENT") {
         const initialData = { [dataName]: [] };
         fsSync.writeFileSync(
