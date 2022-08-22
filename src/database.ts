@@ -16,8 +16,8 @@ interface Object {
   [key: string]: any;
   $inc?: IncDecObject;
   $dec?: IncDecObject;
-  $remove?: {
-    [key: string]: number;
+  $pop?: {
+    [key: string]: 0 | -1;
   };
   $push?: {
     [key: string]: any;
@@ -57,7 +57,7 @@ class JSONDB {
     this.dataArr = this.data[this.dataName];
     this.validate = null;
     this.connected = false;
-    this.updateKeywords = ["push", "inc", "dec", "remove"];
+    this.updateKeywords = ["push", "inc", "dec", "pop"];
   }
 
   // get the whole data in d document
@@ -377,10 +377,10 @@ class JSONDB {
                 objectToUpdate
               );
               break;
-            case "$remove":
+            case "$pop":
               newObj = this.updateArrayValues(
                 keysToUpdate,
-                "$remove",
+                "$pop",
                 oldData,
                 newObj,
                 objectToUpdate
@@ -400,7 +400,7 @@ class JSONDB {
 
       this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
 
-      // await this.updateJSONFile();
+      await this.updateJSONFile();
       return cb(null, updatedData);
     });
   }
@@ -452,7 +452,7 @@ class JSONDB {
   // push or pull to and from an array
   private updateArrayValues = (
     keysToUpdate: string[],
-    specialUpdateKey: "$push" | "$remove",
+    specialUpdateKey: "$push" | "$pop",
     oldData: Object,
     newObj: Object,
     objectToUpdate: Object
@@ -466,15 +466,12 @@ class JSONDB {
         const updatingFactor = objectToUpdate[keyToUpdate];
 
         let updatedArrValue: Object[];
-        if (specialUpdateKey === "$remove") {
-          // updatingFactor here is the index number, where 0 is first and -1 is last
-          if (prevValue.includes(prevValue.at(updatingFactor))) {
-            const prevValueClone = [...prevValue];
-            prevValueClone.splice(updatingFactor, 1);
-            updatedArrValue = [...prevValueClone];
-          } else {
-            updatedArrValue = [...prevValue];
-          }
+        if (specialUpdateKey === "$pop") {
+          // updatingFactor here is the index number, but only first (0) and last (-1) is valid
+          const prevValueClone = [...prevValue];
+          // make sure the updatingFactor is either 0 or -1 in js
+          prevValueClone.splice(updatingFactor, 1);
+          updatedArrValue = [...prevValueClone];
         } else {
           updatedArrValue = [...prevValue, updatingFactor];
         }
@@ -483,7 +480,6 @@ class JSONDB {
     });
     // now remove the update key and value from the newObj
     delete newObj[specialUpdateKey];
-    console.log(newObj);
     return newObj;
   };
 
@@ -552,3 +548,7 @@ export default JSONDB;
 
 // ISSUES I'M HAVING WITH SOME DECISIONS.
 // the updateMany function can update all objects, but then it only requires an empty filter object, someone can make a mistake and update all documents, so I want to make it as part of options. So the command will be done intentionally only.
+
+// NOTE:
+
+// while popping out of an array, -1 removes the first item and 0 removes the first item

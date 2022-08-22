@@ -64,7 +64,7 @@ async function updateUser() {
     const res = await users.findOneAndUpdate(
       { username: "joysara" },
       {
-        $remove: { likes: -5 },
+        $push: { likes: { id: 24 } },
       }
     );
     // console.log(res);
