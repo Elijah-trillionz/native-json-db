@@ -6,7 +6,7 @@ const users = new JSONDB("users");
 (async () => {
   await users.connect({
     type: "object",
-    required: ["name", "username", "likes", "age"],
+    required: ["name", "username", "age"],
     properties: {
       name: { type: "string" },
       username: { type: "string" },
@@ -32,7 +32,7 @@ async function addNewUser() {
       username: "john_doe",
       id: 1,
       likes: [{ id: 21 }, { id: "same" }],
-      age: 45,
+      age: 21,
     });
     // getAllUsers();
     // findAUser();
@@ -61,24 +61,28 @@ async function findAUser() {
 
 async function updateUser() {
   try {
-    const res = await users.findOneAndUpdate({ name: "Elijah-2" }, { age: 30 });
-    console.log(res);
+    const res = await users.findOneAndUpdate(
+      { username: "joysara" },
+      {
+        $remove: { likes: -5 },
+      }
+    );
+    // console.log(res);
   } catch (err) {
     console.log(err, "error");
   }
 }
-// updateUser();
+updateUser();
 
 async function updateMany() {
   try {
     const res = await users.updateMany(
-      { username: "starboys1" },
+      { username: "john_doe" },
       {
-        username: "starboys1",
-        $inc: { age: 1 },
+        $push: { likes: { id: "rep" } },
       }
     );
-    console.log(res);
+    // console.log(res);
   } catch (e) {
     console.log(e);
   }
@@ -97,7 +101,10 @@ async function findOneAndDelete() {
 
 async function deleteMany() {
   try {
-    const res = await users.deleteMany({ name: "Starboy" });
+    const res = await users.deleteMany(
+      { name: "john_doe" },
+      { deleteAll: true }
+    );
     console.log(res);
   } catch (e) {
     console.log(e);

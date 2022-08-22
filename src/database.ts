@@ -16,6 +16,12 @@ interface Object {
   [key: string]: any;
   $inc?: IncDecObject;
   $dec?: IncDecObject;
+  $remove?: {
+    [key: string]: number;
+  };
+  $push?: {
+    [key: string]: any;
+  };
 }
 
 // error object
@@ -24,6 +30,16 @@ interface ErrorObj {
   errorCode: number;
   error: string;
   params?: Object; // for ajv error
+}
+
+// updateMany options
+interface UpdateManyOptions {
+  updateAll: boolean;
+}
+
+// updateMany options
+interface DeleteManyOptions {
+  deleteAll: boolean;
 }
 
 class JSONDB {
@@ -41,13 +57,13 @@ class JSONDB {
     this.dataArr = this.data[this.dataName];
     this.validate = null;
     this.connected = false;
-    this.updateKeywords = ["push", "inc", "dec", "pop"];
+    this.updateKeywords = ["push", "inc", "dec", "remove"];
   }
 
   // get the whole data in d document
-  get allData() {
+  get allData(): Promise<Object[]> {
     return new Promise(async (resolve) => {
-      resolve(this.data);
+      resolve(this.dataArr);
     });
   }
 
@@ -163,17 +179,22 @@ class JSONDB {
     });
   }
 
-  updateMany(filter: Object, newData: Object) {
+  updateMany(filter: Object, newData: Object, options?: UpdateManyOptions) {
     return new Promise(async (resolve, reject) => {
       try {
-        const oldData = await this.findMany(filter);
+        let oldData: Object[];
 
-        if (oldData.length < 1) {
-          return reject({
-            message: "No data was found to be updated",
-            errorCode: 612,
-            error: "NOT_FOUND",
-          });
+        if (options && options.updateAll) {
+          oldData = await this.allData;
+        } else {
+          oldData = await this.findMany(filter);
+          if (oldData.length < 1) {
+            return reject({
+              message: "No data was found to be updated",
+              errorCode: 612,
+              error: "NOT_FOUND",
+            });
+          }
         }
 
         this.validateData(newData, (err: ErrorObj) => {
@@ -200,8 +221,6 @@ class JSONDB {
     });
   }
 
-  // TODO: have an updateAll method, that updates all documents
-
   // find an object and delete
   findOneAndDelete(filter: Object) {
     return new Promise(async (resolve, reject) => {
@@ -227,10 +246,20 @@ class JSONDB {
   }
 
   // find similar objects and delete
-  deleteMany(filter: Object) {
+  deleteMany(filter: Object, options?: DeleteManyOptions) {
     return new Promise(async (resolve, reject) => {
       try {
-        const dataArr = await this.findMany(filter);
+        let dataArr: Object[];
+        if (options && options.deleteAll) {
+          dataArr = [...(await this.allData)]; // gets rid of surface reference
+          this.dataArr.length = 0;
+
+          await this.updateJSONFile();
+          resolve(dataArr);
+          return;
+        }
+
+        dataArr = await this.findMany(filter);
 
         if (dataArr.length <= 0) {
           // resolve with an empty array indicating no document was deleted
@@ -339,6 +368,24 @@ class JSONDB {
                 objectToUpdate
               );
               break;
+            case "$push":
+              newObj = this.updateArrayValues(
+                keysToUpdate,
+                "$push",
+                oldData,
+                newObj,
+                objectToUpdate
+              );
+              break;
+            case "$remove":
+              newObj = this.updateArrayValues(
+                keysToUpdate,
+                "$remove",
+                oldData,
+                newObj,
+                objectToUpdate
+              );
+              break;
           }
         }
       });
@@ -353,7 +400,7 @@ class JSONDB {
 
       this.dataArr[this.dataArr.indexOf(oldData)] = updatedData;
 
-      await this.updateJSONFile();
+      // await this.updateJSONFile();
       return cb(null, updatedData);
     });
   }
@@ -385,7 +432,6 @@ class JSONDB {
   ) => {
     // first find the keys to decrement
     keysToUpdate.forEach((keyToUpdate) => {
-      // console.log(keyToUpdate) /// age
       // get the previous value in the oldData
       const prevValue = oldData[keyToUpdate]; // note there is a possibility that the data doesn't exist, or it isn't a number;
       if (typeof prevValue === "number") {
@@ -400,6 +446,44 @@ class JSONDB {
     });
     // now remove the update key and value from the newObj
     delete newObj[specialUpdateKey];
+    return newObj;
+  };
+
+  // push or pull to and from an array
+  private updateArrayValues = (
+    keysToUpdate: string[],
+    specialUpdateKey: "$push" | "$remove",
+    oldData: Object,
+    newObj: Object,
+    objectToUpdate: Object
+  ) => {
+    // first find the key(s) to push to
+    keysToUpdate.forEach((keyToUpdate) => {
+      // get the previous value in the oldData
+      const prevValue = oldData[keyToUpdate];
+      if (Array.isArray(prevValue)) {
+        // object to push to or pop from array
+        const updatingFactor = objectToUpdate[keyToUpdate];
+
+        let updatedArrValue: Object[];
+        if (specialUpdateKey === "$remove") {
+          // updatingFactor here is the index number, where 0 is first and -1 is last
+          if (prevValue.includes(prevValue.at(updatingFactor))) {
+            const prevValueClone = [...prevValue];
+            prevValueClone.splice(updatingFactor, 1);
+            updatedArrValue = [...prevValueClone];
+          } else {
+            updatedArrValue = [...prevValue];
+          }
+        } else {
+          updatedArrValue = [...prevValue, updatingFactor];
+        }
+        newObj = { ...newObj, [keyToUpdate]: updatedArrValue };
+      }
+    });
+    // now remove the update key and value from the newObj
+    delete newObj[specialUpdateKey];
+    console.log(newObj);
     return newObj;
   };
 
@@ -464,3 +548,7 @@ export default JSONDB;
 // incrementing/decrementing numbers in an object like { name: 'John', age: 21 }
 // pushing and popping to an array in an object like { name: 'John', friends: ['James', 'Ken'] }
 // handle thrown errors where promises where used e.g the create method
+// add more options like based on response in both updating and deleting
+
+// ISSUES I'M HAVING WITH SOME DECISIONS.
+// the updateMany function can update all objects, but then it only requires an empty filter object, someone can make a mistake and update all documents, so I want to make it as part of options. So the command will be done intentionally only.
