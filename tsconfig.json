@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2021",
-    "module": "commonjs",
+    "target": "ES2020",
+    "module": "ES2020",
     "rootDir": "./src",
     "outDir": "./dist",
     "noEmitOnError": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true /* Skip type checking all .d.ts files. */
+    "skipLibCheck": true /* Skip type checking all .d.ts files. */,
+    "moduleResolution":"node"
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "**/*.json"],

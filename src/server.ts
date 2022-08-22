@@ -1,5 +1,4 @@
 import JSONDB from "./database";
-import anyOf from "ajv/lib/vocabularies/applicator/anyOf";
 
 const users = new JSONDB("users");
 

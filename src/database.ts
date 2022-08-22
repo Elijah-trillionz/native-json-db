@@ -545,6 +545,7 @@ export default JSONDB;
 // pushing and popping to an array in an object like { name: 'John', friends: ['James', 'Ken'] }
 // handle thrown errors where promises where used e.g the create method
 // add more options like based on response in both updating and deleting
+// change the writeFileSync to writeFile
 
 // ISSUES I'M HAVING WITH SOME DECISIONS.
 // the updateMany function can update all objects, but then it only requires an empty filter object, someone can make a mistake and update all documents, so I want to make it as part of options. So the command will be done intentionally only.
