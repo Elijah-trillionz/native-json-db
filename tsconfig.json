@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ESNext", /* supports only node 12 >*/
+    "target": "ES2019", /* supports only node 12 >*/
     "module": "commonjs",
     "rootDir": "./src",
     "outDir": "./dist",

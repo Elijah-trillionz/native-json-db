@@ -1,7 +1,7 @@
 {
   "name": "native-json-db",
   "version": "1.0.0",
-  "description": "A database for JSON data, inspired by MongoDB",
+  "description": "A library to store data locally as JSON, inspired by no-sqls like MongoDB",
   "main": "dist/database.js",
   "scripts": {
     "dev": "nodemon src/example/server.ts"
@@ -12,12 +12,18 @@
   ],
   "target": "module",
   "author": "Elijah Trillionz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Elijah-trillionz/native-json-db.git"
+  },
   "keywords": [
     "back-end",
     "nodejs",
     "db",
-    "typescript",
-    "no-sql"
+    "no-sql",
+    "database",
+    "json",
+    "sql"
   ],
   "license": "MIT",
   "devDependencies": {
