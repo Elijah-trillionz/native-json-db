@@ -4,8 +4,5 @@
 LICENSE.txt
 README.md
 pre.nodemon.json
-/dist
 native-json-db-1.0.0.tgz
-dist/database.js
-dist/error.js
 dist/server.js
