@@ -1,26 +1,29 @@
-import JSONDB from "./database";
+import { JSONDB } from "../database";
 
 const users = new JSONDB("users");
 
 (async () => {
-  await users.connect({
-    type: "object",
-    required: ["name", "username", "age"],
-    properties: {
-      name: { type: "string" },
-      username: { type: "string" },
-      likes: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            id: { anyOf: [{ type: "number" }, { type: "string" }] },
+  await users.connect(
+    {
+      type: "object",
+      required: ["name", "username", "age"],
+      properties: {
+        name: { type: "string" },
+        username: { type: "string" },
+        likes: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { anyOf: [{ type: "number" }, { type: "string" }] },
+            },
           },
         },
+        age: { type: "integer" },
       },
-      age: { type: "integer" },
     },
-  });
+    { writeSync: false }
+  );
 })();
 
 // backend programmer
@@ -38,10 +41,10 @@ async function addNewUser() {
     // updateAUser();
     // deleteAUser();
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   }
 }
-// addNewUser();
+addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -71,7 +74,7 @@ async function updateUser() {
     console.log(err, "error");
   }
 }
-updateUser();
+// updateUser();
 
 async function updateMany() {
   try {

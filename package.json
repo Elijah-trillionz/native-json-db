@@ -1,17 +1,27 @@
 {
-  "name": "jsondb",
+  "name": "native-json-db",
   "version": "1.0.0",
   "description": "A database for JSON data, inspired by MongoDB",
-  "main": "server.ts",
+  "main": "dist/database.js",
   "scripts": {
-    "dev": "nodemon ./src/server.ts"
+    "dev": "nodemon src/example/server.ts"
   },
+  "types": "dist/database.d.ts",
+  "files": [
+    "/dist"
+  ],
   "target": "module",
   "author": "Elijah Trillionz",
+  "keywords": [
+    "back-end",
+    "nodejs",
+    "db",
+    "typescript",
+    "no-sql"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.0.3",
-    "concurrently": "^7.3.0",
     "nodemon": "^2.0.19",
     "ts-node": "^10.9.1"
   },

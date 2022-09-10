@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
+    "target": "ES2022", /* supports only node 12 >*/
+    "module": "commonjs",
     "rootDir": "./src",
     "outDir": "./dist",
     "noEmitOnError": true,
@@ -9,8 +9,9 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-    "moduleResolution":"node"
+    "moduleResolution":"node",
+    "declaration": true,
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "**/*.json"],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.json", "src/example/*"],
 }

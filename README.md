@@ -16,8 +16,3 @@
 - Write code only in typescript, specifically in the __src__ directory, code should not be written/edited in the __dist__ directory.
 - The __src__ directory only contains typescript files of the package i.e files that matter
 - the __examples__ directory would contain any typical example of using the database
-
-A sample of a simple query
-
-## NOTE: URGENT
-When compiling to javascript change the module (in `tsconfig.json`) to `ES2020`.

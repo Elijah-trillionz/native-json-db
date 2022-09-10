@@ -1,5 +1,5 @@
-import * as fs from "fs/promises";
-import * as fsSync from "fs";
+import { writeFile } from "fs/promises";
+import { writeFileSync, readFileSync, mkdirSync } from "fs";
 import { instanceOfNodeError } from "./error";
 import Ajv from "ajv";
 
@@ -42,22 +42,29 @@ interface DeleteManyOptions {
   deleteAll: boolean;
 }
 
-class JSONDB {
+// connecting to db options
+interface ConnectOptions {
+  writeSync?: boolean; // determine if to use sync or async when writing to file
+}
+
+export class JSONDB {
   readonly data: Data;
   readonly dataName: string;
   readonly dataArr: Object[];
   validate: any;
   connected: boolean;
   updateKeywords: string[];
+  dbOptions: ConnectOptions;
 
   constructor(dataName: string) {
-    const existingData = getExistingData(dataName);
+    const existingData = getExistingDataSync(dataName);
     this.data = existingData ? existingData : { [dataName]: [] };
     this.dataName = dataName;
     this.dataArr = this.data[this.dataName];
     this.validate = null;
     this.connected = false;
     this.updateKeywords = ["push", "inc", "dec", "pop"];
+    this.dbOptions = { writeSync: true };
   }
 
   // get the whole data in d document
@@ -69,7 +76,7 @@ class JSONDB {
 
   // connect to the db: basically ensuring schema is valid else throw an error
   // ensure that the schema is ready and active before the db is ready to be used
-  connect(schema: Object) {
+  connect(schema: Object, options: ConnectOptions) {
     return new Promise((resolve, reject) => {
       const ajv = new Ajv();
       if (this.connected) {
@@ -83,6 +90,11 @@ class JSONDB {
 
       this.connected = true;
       this.validate = ajv.compile(schema);
+
+      // set options given
+      if (!options.writeSync) {
+        this.dbOptions.writeSync = false;
+      }
     });
   }
 
@@ -90,16 +102,12 @@ class JSONDB {
   create(data: Object) {
     return new Promise((resolve, reject) => {
       // validate the data with the given schema
-      this.validateSchema(data, (err: ErrorObj) => {
+      this.validateSchema(data, async (err: ErrorObj) => {
         if (err) return reject(err);
 
-        this.validateData(data, async (err: ErrorObj) => {
-          if (err) return reject(err);
-
-          this.dataArr.push(data);
-          await this.updateJSONFile();
-          resolve("done");
-        });
+        this.dataArr.push(data);
+        await this.updateJSONFile();
+        resolve("done");
       });
     });
   }
@@ -107,19 +115,15 @@ class JSONDB {
   // find object with the key value
   findOne(filter: Object): Promise<Object | null> {
     return new Promise((resolve, reject) => {
-      this.validateData(filter, (err: ErrorObj) => {
-        if (err) return reject(err);
+      this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
+        // resolve with null if not found, allowing the dev control it from the try block
+        if (err && err.error === "NOT_FOUND") {
+          return resolve(null);
+        } else if (err && err.error === "BAD_REQUEST") {
+          return reject(err);
+        }
 
-        this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
-          // resolve with null if not found, allowing the dev control it from the try block
-          if (err && err.error === "NOT_FOUND") {
-            return resolve(null);
-          } else if (err && err.error === "BAD_REQUEST") {
-            return reject(err);
-          }
-
-          resolve(foundData[0]);
-        });
+        resolve(foundData[0]);
       });
     });
   }
@@ -127,19 +131,15 @@ class JSONDB {
   // find all objects with a key value
   findMany(filter: Object): Promise<Object[]> {
     return new Promise((resolve, reject) => {
-      this.validateData(filter, (err: ErrorObj) => {
-        if (err) return reject(err);
+      this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
+        // resolve with [] if not found, allowing the dev control it from the try block
+        if (err && err.error === "NOT_FOUND") {
+          return resolve([]);
+        } else if (err && err.error === "BAD_REQUEST") {
+          return reject(err);
+        }
 
-        this.filter(filter, (err: ErrorObj, foundData: Object[]) => {
-          // resolve with [] if not found, allowing the dev control it from the try block
-          if (err && err.error === "NOT_FOUND") {
-            return resolve([]);
-          } else if (err && err.error === "BAD_REQUEST") {
-            return reject(err);
-          }
-
-          resolve(foundData);
-        });
+        resolve(foundData);
       });
     });
   }
@@ -159,19 +159,15 @@ class JSONDB {
           });
         }
 
-        this.validateData(newData, async (err: ErrorObj) => {
-          if (err) return reject(err);
+        await this.update(
+          oldData,
+          newData,
+          (err: ErrorObj, updatedData: Object) => {
+            if (err) return reject(err);
 
-          await this.update(
-            oldData,
-            newData,
-            (err: ErrorObj, updatedData: Object) => {
-              if (err) return reject(err);
-
-              resolve(updatedData);
-            }
-          );
-        });
+            resolve(updatedData);
+          }
+        );
       } catch (e) {
         // for errors thrown when the findOne method encounters an error
         reject(e);
@@ -197,23 +193,18 @@ class JSONDB {
           }
         }
 
-        this.validateData(newData, (err: ErrorObj) => {
-          if (err) return reject(err);
+        const updatedDataArr: Object[] = oldData.map(async (value) => {
+          return await this.update(
+            value,
+            newData,
+            (err: ErrorObj, updatedData: Object) => {
+              if (err) return reject(err);
 
-          const updatedDataArr: Object[] = oldData.map(async (value) => {
-            return await this.update(
-              value,
-              newData,
-              (err: ErrorObj, updatedData: Object) => {
-                if (err) return reject(err);
-
-                return updatedData;
-              }
-            );
-          });
-
-          resolve(Promise.all(updatedDataArr));
+              return updatedData;
+            }
+          );
         });
+        resolve(Promise.all(updatedDataArr));
       } catch (e) {
         // for errors thrown when the findMany or update method encounters an error
         reject(e);
@@ -326,13 +317,15 @@ class JSONDB {
 
   // private
   private async updateJSONFile() {
-    await fs.writeFile(
-      `data/${this.dataName}.json`,
-      JSON.stringify(this.data),
-      {
+    if (this.dbOptions.writeSync) {
+      writeFileSync(`data/${this.dataName}.json`, JSON.stringify(this.data), {
         flag: "w",
-      }
-    );
+      });
+    } else {
+      await writeFile(`data/${this.dataName}.json`, JSON.stringify(this.data), {
+        flag: "w",
+      });
+    }
   }
 
   private async update(oldData: Object, newData: Object, cb: Function) {
@@ -482,53 +475,28 @@ class JSONDB {
     delete newObj[specialUpdateKey];
     return newObj;
   };
-
-  // use this function in each method to validate that data is an object only (useful for javascript)
-  private validateData = (data: Object, cb: Function) => {
-    // verify that the server is connected before doing anything
-    if (!this.connected) {
-      return cb({
-        message: "Your server is not connected. Use the connect() method",
-        error: "NO_CONNECTION",
-        errorCode: 614,
-      });
-    }
-
-    // TODO: remove for typescript
-    if (
-      typeof data !== "object" ||
-      (typeof data === "object" && Array.isArray(data))
-    ) {
-      return cb({
-        message: "Data must be an object",
-        error: "INVALID_TYPE",
-        errorCode: 611,
-      });
-    }
-
-    return cb(null);
-  };
 }
 
-function getExistingData(dataName: string) {
+// synchronous cox it is only called once per every constructor
+function getExistingDataSync(dataName: string) {
   try {
-    const data = fsSync.readFileSync(`data/${dataName}.json`);
+    const data = readFileSync(`data/${dataName}.json`);
     return JSON.parse(data.toString());
   } catch (e) {
     if (instanceOfNodeError(e, Error)) {
       if (e.code === "ENOENT") {
         const initialData = { [dataName]: [] };
-        fsSync.writeFileSync(
-          `data/${dataName}.json`,
-          JSON.stringify(initialData)
-        );
-        return initialData;
+        try {
+          // create data directory only if it hasn't been created
+          mkdirSync("data");
+        } catch (e) {
+          writeFileSync(`data/${dataName}.json`, JSON.stringify(initialData));
+          return initialData;
+        }
       }
     }
   }
 }
-
-export default JSONDB;
 
 // ERROR CODES: not all are errors, you could say REJECT CODES, where the reject function is used::
 // 611: invalid data type - a core error when submitting a data that isn't an object
@@ -540,15 +508,7 @@ export default JSONDB;
 
 // TODOS:
 // validate file is written successfully, else return error
-// hide the private methods in JavaScript
-// incrementing/decrementing numbers in an object like { name: 'John', age: 21 }
-// pushing and popping to an array in an object like { name: 'John', friends: ['James', 'Ken'] }
-// handle thrown errors where promises where used e.g the create method
-// add more options like based on response in both updating and deleting
 // change the writeFileSync to writeFile
-
-// ISSUES I'M HAVING WITH SOME DECISIONS.
-// the updateMany function can update all objects, but then it only requires an empty filter object, someone can make a mistake and update all documents, so I want to make it as part of options. So the command will be done intentionally only.
 
 // NOTE:
 
