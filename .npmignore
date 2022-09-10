@@ -1,2 +1,5 @@
 /src/example
 /.idea
+/data
+.gitignore
+nodemon.json

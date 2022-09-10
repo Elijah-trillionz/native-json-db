@@ -92,7 +92,7 @@ export class JSONDB {
       this.validate = ajv.compile(schema);
 
       // set options given
-      if (!options.writeSync) {
+      if (!options?.writeSync) {
         this.dbOptions.writeSync = false;
       }
     });
