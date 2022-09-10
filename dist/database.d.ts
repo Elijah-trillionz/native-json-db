@@ -47,6 +47,6 @@ export declare class JSONDB {
     private update;
     private validateSchema;
     private updateNumberValues;
-    private updateArrayValues;
+    updateArrayValues: (keysToUpdate: string[], specialUpdateKey: "$push" | "$pop", oldData: Object, newObj: Object, objectToUpdate: Object) => Object;
 }
 export {};

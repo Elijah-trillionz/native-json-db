@@ -16,3 +16,21 @@
 - Write code only in typescript, specifically in the __src__ directory, code should not be written/edited in the __dist__ directory.
 - The __src__ directory only contains typescript files of the package i.e files that matter
 - the __examples__ directory would contain any typical example of using the database
+
+
+## ERROR CODES
+not all are errors, you could say REJECT CODES, where the reject function is used::
+611: invalid data type - a core error when submitting a data that isn't an object
+612: not found - when the filter method finds no occurrences
+613: connection error: because schema cannot be compiled more than once, the server must be connected only once in every instance
+614: no connection: happens when you don't connect before using nay method
+615: all schema errors from ajv
+616: bad_request: happens when you send an empty object
+
+
+## NOTE:
+while popping out of an array, -1 removes the first item and 0 removes the first item
+
+## TODOS: As Issues
+
+1. validate file is written successfully, else return error

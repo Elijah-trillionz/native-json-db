@@ -44,7 +44,7 @@ async function addNewUser() {
     // console.log(err);
   }
 }
-addNewUser();
+// addNewUser();
 
 async function getAllUsers() {
   const response = await users.allData;
@@ -64,9 +64,10 @@ async function findAUser() {
 async function updateUser() {
   try {
     const res = await users.findOneAndUpdate(
-      { username: "joysara" },
+      { username: "john_doe" },
       {
         $push: { likes: { id: 24 } },
+        $inc: { age: 1 },
       }
     );
     // console.log(res);

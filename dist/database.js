@@ -374,15 +374,3 @@ function getExistingDataSync(dataName) {
         }
     }
 }
-// ERROR CODES: not all are errors, you could say REJECT CODES, where the reject function is used::
-// 611: invalid data type - a core error when submitting a data that isn't an object
-// 612: not found - when the filter method finds no occurrences
-// 613: connection error: because schema cannot be compiled more than once, the server must be connected only once in every instance
-// 614: no connection: happens when you don't connect before using nay method
-// 615: all schema errors from ajv
-// 616: bad_request: happens when you send an empty object
-// TODOS:
-// validate file is written successfully, else return error
-// change the writeFileSync to writeFile
-// NOTE:
-// while popping out of an array, -1 removes the first item and 0 removes the first item
