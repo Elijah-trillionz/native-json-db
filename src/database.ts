@@ -45,16 +45,17 @@ interface DeleteManyOptions {
 // connecting to db options
 interface ConnectOptions {
   writeSync?: boolean; // determine if to use sync or async when writing to file
+  indentSpace?: number;
 }
 
 export class JSONDB {
-  readonly data: Data;
-  readonly dataName: string;
-  readonly dataArr: Object[];
-  validate: any;
-  connected: boolean;
-  updateKeywords: string[];
-  dbOptions: ConnectOptions;
+  private readonly data: Data;
+  private readonly dataName: string;
+  private readonly dataArr: Object[];
+  private validate: any;
+  private connected: boolean;
+  private updateKeywords: string[];
+  private dbOptions: ConnectOptions;
 
   constructor(dataName: string) {
     const existingData = getExistingDataSync(dataName);
@@ -64,7 +65,7 @@ export class JSONDB {
     this.validate = null;
     this.connected = false;
     this.updateKeywords = ["push", "inc", "dec", "pop"];
-    this.dbOptions = { writeSync: true };
+    this.dbOptions = { writeSync: true, indentSpace: 2 };
   }
 
   // get the whole data in d document
@@ -91,9 +92,14 @@ export class JSONDB {
       this.connected = true;
       this.validate = ajv.compile(schema);
 
-      // set options given
+      // set writeSync option if given
       if (!options?.writeSync) {
         this.dbOptions.writeSync = false;
+      }
+
+      // set indentSpace option if given and verify it's a number for js users
+      if (options?.indentSpace && typeof options.indentSpace === "number") {
+        this.dbOptions.indentSpace = options.indentSpace;
       }
     });
   }
@@ -146,7 +152,7 @@ export class JSONDB {
 
   // find an object and update
   // both filter and newData has to be an object
-  findOneAndUpdate(filter: Object, newData: Object) {
+  findOneAndUpdate(filter: Object, newData: any) {
     return new Promise(async (resolve, reject) => {
       try {
         const oldData = await this.findOne(filter);
@@ -269,7 +275,6 @@ export class JSONDB {
       }
     });
   }
-  // TODO: have a deleteAll method, that deletes all documents
 
   // helper functions
 
@@ -318,19 +323,36 @@ export class JSONDB {
   // private
   private async updateJSONFile() {
     if (this.dbOptions.writeSync) {
-      writeFileSync(`data/${this.dataName}.json`, JSON.stringify(this.data), {
-        flag: "w",
-      });
+      writeFileSync(
+        `data/${this.dataName}.json`,
+        JSON.stringify(this.data, null, this.dbOptions.indentSpace),
+        {
+          flag: "w",
+        }
+      );
     } else {
-      await writeFile(`data/${this.dataName}.json`, JSON.stringify(this.data), {
-        flag: "w",
-      });
+      await writeFile(
+        `data/${this.dataName}.json`,
+        JSON.stringify(this.data, null, this.dbOptions.indentSpace),
+        {
+          flag: "w",
+        }
+      );
     }
   }
 
-  private async update(oldData: Object, newData: Object, cb: Function) {
+  private async update(oldData: Object, newData: any, cb: Function) {
     // find any update keywords in newData object
     const keys = Object.keys(newData);
+    // verify the newData is an object, useful for javascript users
+    if (typeof newData !== "object" || Array.isArray(newData)) {
+      return cb({
+        message: "New data must be an object",
+        error: "INVALID_DATA_TYPE",
+        errorCode: 611,
+      });
+    }
+
     const specialUpdateKeys = keys.filter((key) => {
       return this.updateKeywords.includes(`${key.substring(1)}`);
     });
@@ -443,7 +465,7 @@ export class JSONDB {
   };
 
   // push or pull to and from an array
-  updateArrayValues = (
+  private updateArrayValues = (
     keysToUpdate: string[],
     specialUpdateKey: "$push" | "$pop",
     oldData: Object,
@@ -490,7 +512,10 @@ function getExistingDataSync(dataName: string) {
           // create data directory only if it hasn't been created
           mkdirSync("data");
         } catch (e) {
-          writeFileSync(`data/${dataName}.json`, JSON.stringify(initialData));
+          writeFileSync(
+            `data/${dataName}.json`,
+            JSON.stringify(initialData, null, 2)
+          );
           return initialData;
         }
       }

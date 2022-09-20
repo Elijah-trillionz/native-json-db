@@ -22,7 +22,7 @@ const users = new JSONDB("users");
         age: { type: "integer" },
       },
     },
-    { writeSync: false }
+    { writeSync: false, indentSpace: 2 }
   );
 })();
 
@@ -41,7 +41,7 @@ async function addNewUser() {
     // updateAUser();
     // deleteAUser();
   } catch (err) {
-    // console.log(err);
+    console.log(err);
   }
 }
 // addNewUser();
@@ -65,17 +65,14 @@ async function updateUser() {
   try {
     const res = await users.findOneAndUpdate(
       { username: "john_doe" },
-      {
-        $push: { likes: { id: 24 } },
-        $inc: { age: 1 },
-      }
+      { username: "john_doe" }
     );
     // console.log(res);
   } catch (err) {
     console.log(err, "error");
   }
 }
-// updateUser();
+updateUser();
 
 async function updateMany() {
   try {

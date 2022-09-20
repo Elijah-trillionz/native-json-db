@@ -1,6 +1,3 @@
-interface Data {
-    [key: string]: any[];
-}
 interface IncDecObject {
     [key: string]: number;
 }
@@ -23,22 +20,23 @@ interface DeleteManyOptions {
 }
 interface ConnectOptions {
     writeSync?: boolean;
+    indentSpace?: number;
 }
 export declare class JSONDB {
-    readonly data: Data;
-    readonly dataName: string;
-    readonly dataArr: Object[];
-    validate: any;
-    connected: boolean;
-    updateKeywords: string[];
-    dbOptions: ConnectOptions;
+    private readonly data;
+    private readonly dataName;
+    private readonly dataArr;
+    private validate;
+    private connected;
+    private updateKeywords;
+    private dbOptions;
     constructor(dataName: string);
     get allData(): Promise<Object[]>;
     connect(schema: Object, options: ConnectOptions): Promise<unknown>;
     create(data: Object): Promise<unknown>;
     findOne(filter: Object): Promise<Object | null>;
     findMany(filter: Object): Promise<Object[]>;
-    findOneAndUpdate(filter: Object, newData: Object): Promise<unknown>;
+    findOneAndUpdate(filter: Object, newData: any): Promise<unknown>;
     updateMany(filter: Object, newData: Object, options?: UpdateManyOptions): Promise<unknown>;
     findOneAndDelete(filter: Object): Promise<unknown>;
     deleteMany(filter: Object, options?: DeleteManyOptions): Promise<unknown>;
@@ -47,6 +45,6 @@ export declare class JSONDB {
     private update;
     private validateSchema;
     private updateNumberValues;
-    updateArrayValues: (keysToUpdate: string[], specialUpdateKey: "$push" | "$pop", oldData: Object, newObj: Object, objectToUpdate: Object) => Object;
+    private updateArrayValues;
 }
 export {};
