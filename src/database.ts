@@ -101,6 +101,8 @@ export class JSONDB {
       if (options?.indentSpace && typeof options.indentSpace === "number") {
         this.dbOptions.indentSpace = options.indentSpace;
       }
+
+      resolve("connected");
     });
   }
 
