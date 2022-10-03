@@ -80,6 +80,7 @@ async function updateMany() {
       { username: "john_doe" },
       {
         $push: { likes: { id: "rep" } },
+        $inc: { age: 1 },
       }
     );
     // console.log(res);

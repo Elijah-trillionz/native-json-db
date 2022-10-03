@@ -83,7 +83,7 @@ export class JSONDB {
       if (this.connected) {
         return reject({
           message:
-            "Can only connect and create a schema once per every instance",
+            "Can only connect and create a schema once for every instance/collection",
           error: "CONNECTION_ERROR",
           errorCode: 613,
         });
@@ -292,7 +292,7 @@ export class JSONDB {
         {
           message: "Filter object does not contain any key/values",
           error: "BAD_REQUEST",
-          errorCode: 616,
+          errorCode: 615,
         },
         null
       );
@@ -422,7 +422,7 @@ export class JSONDB {
     });
   }
 
-  // validate schema: used in the update and the create method
+  // validate schema
   private validateSchema = (data: Object, cb: Function) => {
     const valid = this.validate(data);
     if (!valid) {
@@ -431,7 +431,7 @@ export class JSONDB {
         message,
         error: `INVALID_SCHEMA_RES:${keyword?.toUpperCase()}`,
         params,
-        errorCode: 615,
+        errorCode: 614,
       });
     }
 
