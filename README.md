@@ -428,9 +428,3 @@ async function deleteAllUsers() {
 ## Contributing
 
 Docs on contributing coming soon.
-
-
-## TODOS: As Issues
-
-1. validate file is written successfully, else return error
-2. add remove property option to the updateMany object - this is where you get to remove a property from a group of documents
