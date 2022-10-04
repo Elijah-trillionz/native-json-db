@@ -405,7 +405,7 @@ The `deleteAll` property when set to `true` deletes all documents in a collectio
 async function deleteAllUsers() {
   // data/users.json = { "users": [{ "username": "john_doe", "age": 21, "student": true, "promoted": true }, {"username": "jane_doe", "age": 24, "student": true, "promoted": true }] }
   const res = await users.deleteMany({}, { deleteAll: true });
-  console.log(res) // [{ username: 'john_doe', age: 21, student: true, promoted: false }, {username: 'jane_doe', age: 24, student: false }]
+  console.log(res) // [{ username: 'john_doe', age: 21, student: true, promoted: false }, {username: 'jane_doe', age: 24, student: false, promoted: true }]
   
   // data/users.json = { "users": [] }
 }
