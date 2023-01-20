@@ -1,6 +1,6 @@
 {
   "name": "native-json-db",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A library to store data locally as JSON, inspired by no-sqls like MongoDB",
   "main": "dist/database.js",
   "scripts": {
