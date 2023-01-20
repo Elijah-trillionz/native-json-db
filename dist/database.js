@@ -8,6 +8,7 @@ const promises_1 = require("fs/promises");
 const fs_1 = require("fs");
 const error_1 = require("./error");
 const ajv_1 = __importDefault(require("ajv"));
+const ajv_formats_1 = __importDefault(require("ajv-formats"));
 class JSONDB {
     constructor(dataName) {
         // helper functions
@@ -19,9 +20,9 @@ class JSONDB {
             // return as invalid
             if (keys.length < 1 || values.length < 1) {
                 return cb({
-                    message: "Filter object does not contain any key/values",
-                    error: "BAD_REQUEST",
-                    errorCode: 616,
+                    message: 'Filter object does not contain any key/values',
+                    error: 'BAD_REQUEST',
+                    errorCode: 615,
                 }, null);
             }
             const found = this.dataArr.filter((item) => {
@@ -37,12 +38,12 @@ class JSONDB {
                 return cb(null, found);
             }
             return cb({
-                message: "Object does not exist in your data",
-                error: "NOT_FOUND",
+                message: 'Object does not exist in your data',
+                error: 'NOT_FOUND',
                 errorCode: 612,
             }, null);
         };
-        // validate schema: used in the update and the create method
+        // validate schema
         this.validateSchema = (data, cb) => {
             const valid = this.validate(data);
             if (!valid) {
@@ -51,7 +52,7 @@ class JSONDB {
                     message,
                     error: `INVALID_SCHEMA_RES:${keyword === null || keyword === void 0 ? void 0 : keyword.toUpperCase()}`,
                     params,
-                    errorCode: 615,
+                    errorCode: 614,
                 });
             }
             return cb(null);
@@ -63,10 +64,10 @@ class JSONDB {
             keysToUpdate.forEach((keyToUpdate) => {
                 // get the previous value in the oldData
                 const prevValue = oldData[keyToUpdate]; // note there is a possibility that the data doesn't exist, or it isn't a number;
-                if (typeof prevValue === "number") {
+                if (typeof prevValue === 'number') {
                     // the dev will provide a value to update by. this must be number, handle for js;
                     const valToUpdateBy = objectToUpdate[keyToUpdate];
-                    const updatedVal = specialUpdateKey === "$inc"
+                    const updatedVal = specialUpdateKey === '$inc'
                         ? prevValue + valToUpdateBy
                         : prevValue - valToUpdateBy;
                     newObj = { ...newObj, [keyToUpdate]: updatedVal };
@@ -86,7 +87,7 @@ class JSONDB {
                     // object to push to or pop from array
                     const updatingFactor = objectToUpdate[keyToUpdate];
                     let updatedArrValue;
-                    if (specialUpdateKey === "$pop") {
+                    if (specialUpdateKey === '$pop') {
                         // updatingFactor here is the index number, but only first (0) and last (-1) is valid
                         const prevValueClone = [...prevValue];
                         // make sure the updatingFactor is either 0 or -1 in js
@@ -109,7 +110,7 @@ class JSONDB {
         this.dataArr = this.data[this.dataName];
         this.validate = null;
         this.connected = false;
-        this.updateKeywords = ["push", "inc", "dec", "pop"];
+        this.updateKeywords = ['push', 'inc', 'dec', 'pop'];
         this.dbOptions = { writeSync: true, indentSpace: 2 };
     }
     // get the whole data in d document
@@ -123,10 +124,11 @@ class JSONDB {
     connect(schema, options) {
         return new Promise((resolve, reject) => {
             const ajv = new ajv_1.default();
+            (0, ajv_formats_1.default)(ajv);
             if (this.connected) {
                 return reject({
-                    message: "Can only connect and create a schema once per every instance",
-                    error: "CONNECTION_ERROR",
+                    message: 'Can only connect and create a schema once for every instance/collection',
+                    error: 'CONNECTION_ERROR',
                     errorCode: 613,
                 });
             }
@@ -137,9 +139,10 @@ class JSONDB {
                 this.dbOptions.writeSync = false;
             }
             // set indentSpace option if given and verify it's a number for js users
-            if ((options === null || options === void 0 ? void 0 : options.indentSpace) && typeof options.indentSpace === "number") {
+            if ((options === null || options === void 0 ? void 0 : options.indentSpace) && typeof options.indentSpace === 'number') {
                 this.dbOptions.indentSpace = options.indentSpace;
             }
+            resolve('connected');
         });
     }
     // creating data === add data to the document
@@ -151,7 +154,7 @@ class JSONDB {
                     return reject(err);
                 this.dataArr.push(data);
                 await this.updateJSONFile();
-                resolve("done");
+                resolve('done');
             });
         });
     }
@@ -160,10 +163,10 @@ class JSONDB {
         return new Promise((resolve, reject) => {
             this.filter(filter, (err, foundData) => {
                 // resolve with null if not found, allowing the dev control it from the try block
-                if (err && err.error === "NOT_FOUND") {
+                if (err && err.error === 'NOT_FOUND') {
                     return resolve(null);
                 }
-                else if (err && err.error === "BAD_REQUEST") {
+                else if (err && err.error === 'BAD_REQUEST') {
                     return reject(err);
                 }
                 resolve(foundData[0]);
@@ -175,10 +178,10 @@ class JSONDB {
         return new Promise((resolve, reject) => {
             this.filter(filter, (err, foundData) => {
                 // resolve with [] if not found, allowing the dev control it from the try block
-                if (err && err.error === "NOT_FOUND") {
+                if (err && err.error === 'NOT_FOUND') {
                     return resolve([]);
                 }
-                else if (err && err.error === "BAD_REQUEST") {
+                else if (err && err.error === 'BAD_REQUEST') {
                     return reject(err);
                 }
                 resolve(foundData);
@@ -193,9 +196,9 @@ class JSONDB {
                 const oldData = await this.findOne(filter);
                 if (!oldData) {
                     return reject({
-                        message: "No data was found to be updated",
+                        message: 'No data was found to be updated',
                         errorCode: 612,
-                        error: "NOT_FOUND",
+                        error: 'NOT_FOUND',
                     });
                 }
                 await this.update(oldData, newData, (err, updatedData) => {
@@ -221,9 +224,9 @@ class JSONDB {
                     oldData = await this.findMany(filter);
                     if (oldData.length < 1) {
                         return reject({
-                            message: "No data was found to be updated",
+                            message: 'No data was found to be updated',
                             errorCode: 612,
-                            error: "NOT_FOUND",
+                            error: 'NOT_FOUND',
                         });
                     }
                 }
@@ -295,12 +298,12 @@ class JSONDB {
     async updateJSONFile() {
         if (this.dbOptions.writeSync) {
             (0, fs_1.writeFileSync)(`data/${this.dataName}.json`, JSON.stringify(this.data, null, this.dbOptions.indentSpace), {
-                flag: "w",
+                flag: 'w',
             });
         }
         else {
             await (0, promises_1.writeFile)(`data/${this.dataName}.json`, JSON.stringify(this.data, null, this.dbOptions.indentSpace), {
-                flag: "w",
+                flag: 'w',
             });
         }
     }
@@ -308,10 +311,10 @@ class JSONDB {
         // find any update keywords in newData object
         const keys = Object.keys(newData);
         // verify the newData is an object, useful for javascript users
-        if (typeof newData !== "object" || Array.isArray(newData)) {
+        if (typeof newData !== 'object' || Array.isArray(newData)) {
             return cb({
-                message: "New data must be an object",
-                error: "INVALID_DATA_TYPE",
+                message: 'New data must be an object',
+                error: 'INVALID_DATA_TYPE',
                 errorCode: 611,
             });
         }
@@ -323,20 +326,20 @@ class JSONDB {
             specialUpdateKeys.forEach((specialUpdateKey) => {
                 const objectToUpdate = newData[specialUpdateKey];
                 // verify that the specialUpdateKey has an object as value
-                if (typeof objectToUpdate === "object") {
+                if (typeof objectToUpdate === 'object') {
                     const keysToUpdate = Object.keys(objectToUpdate);
                     switch (specialUpdateKey) {
-                        case "$inc":
-                            newObj = this.updateNumberValues(keysToUpdate, "$inc", oldData, newObj, objectToUpdate);
+                        case '$inc':
+                            newObj = this.updateNumberValues(keysToUpdate, '$inc', oldData, newObj, objectToUpdate);
                             break;
-                        case "$dec":
-                            newObj = this.updateNumberValues(keysToUpdate, "$dec", oldData, newObj, objectToUpdate);
+                        case '$dec':
+                            newObj = this.updateNumberValues(keysToUpdate, '$dec', oldData, newObj, objectToUpdate);
                             break;
-                        case "$push":
-                            newObj = this.updateArrayValues(keysToUpdate, "$push", oldData, newObj, objectToUpdate);
+                        case '$push':
+                            newObj = this.updateArrayValues(keysToUpdate, '$push', oldData, newObj, objectToUpdate);
                             break;
-                        case "$pop":
-                            newObj = this.updateArrayValues(keysToUpdate, "$pop", oldData, newObj, objectToUpdate);
+                        case '$pop':
+                            newObj = this.updateArrayValues(keysToUpdate, '$pop', oldData, newObj, objectToUpdate);
                             break;
                     }
                 }
@@ -364,11 +367,11 @@ function getExistingDataSync(dataName) {
     }
     catch (e) {
         if ((0, error_1.instanceOfNodeError)(e, Error)) {
-            if (e.code === "ENOENT") {
+            if (e.code === 'ENOENT') {
                 const initialData = { [dataName]: [] };
                 try {
                     // create data directory only if it hasn't been created
-                    (0, fs_1.mkdirSync)("data");
+                    (0, fs_1.mkdirSync)('data');
                 }
                 catch (e) {
                     (0, fs_1.writeFileSync)(`data/${dataName}.json`, JSON.stringify(initialData, null, 2));
