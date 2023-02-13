@@ -67,14 +67,14 @@ async function updateUser() {
   try {
     const res = await users.findOneAndUpdate(
       { username: 'john_doe' },
-      { username: 'john_doe' }
+      { $pop: { likes: -1 } }
     );
     // console.log(res);
   } catch (err) {
     console.log(err, 'error');
   }
 }
-// updateUser();
+updateUser();
 
 async function updateMany() {
   try {
