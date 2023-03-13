@@ -1,5 +1,7 @@
 Native-JSON-DB or JSONDb is a NoSQL database system on your local server. With it, you can store data as JSON objects in a file in your server. native-json-db comes with TypeScript support, in fact using TypeScript is encouraged.
 
+**NOTE:** This library isn't yet efficient for large-scale applications with large ammount of users writing to the database. Use for personal applications or for your portfolio only.
+
 ## Installation
 ```shell
 npm install native-json-db
